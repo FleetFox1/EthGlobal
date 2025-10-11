@@ -21,10 +21,17 @@
 
 ### Frontend
 - 🎯 **Mobile-First Design** - PWA-ready, optimized for phones
-- 📱 **Bottom Navigation** - Hamburger menu, scan button, settings
+- � **Camera Scanning** - Capture bugs with live camera or upload photos
+- �📱 **Bottom Navigation** - Hamburger menu, scan button, settings
+- 📚 **Collection View** - Grid/list view toggle with filters and search
+- 🏆 **Leaderboard** - Top collectors ranking with stats
+- 👤 **User Profile** - Stats, achievements, and activity feed
+- ℹ️ **About Page** - Project info and tokenomics
 - 🎨 **Modern UI** - ShadCN UI components with Tailwind CSS
 - 🌗 **Dark Mode** - Full theme support
 - ⚡ **Fast & Responsive** - Next.js 15 with Turbopack
+- 🎭 **Smooth Animations** - Polished transitions and hover effects
+- 📱 **Mobile Safe-Area** - iOS/Android notch support
 
 ### Backend
 - 🔗 **Smart Contracts** - BUG token (ERC-20), Bug NFTs (ERC-721), Voting system
@@ -225,7 +232,10 @@ See [`GIT_WORKFLOW.md`](GIT_WORKFLOW.md) for detailed collaboration instructions
 
 - **[API Documentation](apps/web/API_DOCUMENTATION.md)** - Complete API reference with examples
 - **[Smart Contracts README](apps/contracts/README.md)** - Contract architecture and testing
-- **[Git Workflow](GIT_WORKFLOW.md)** - Branching strategy and collaboration guide
+- **[Frontend Progress](FRONTEND_PROGRESS.md)** - Frontend development status and features
+- **[Camera Modal Docs](CAMERA_MODAL_DOCS.md)** - Camera scanning implementation guide
+- **[Collection Page Docs](COLLECTION_PAGE_DOCS.md)** - Collection view architecture
+- **[Component Guide](COMPONENT_GUIDE.md)** - Reusable UI components reference
 
 ## 🧪 Testing
 
@@ -248,11 +258,15 @@ Current test coverage:
 - [x] IPFS integration with Lighthouse
 - [x] API routes for submission, voting, queries
 - [x] Mobile-first homepage with bottom navigation
+- [x] Camera scanning UI with CameraModal component
+- [x] Collection page with grid/list views and filters
+- [x] Leaderboard page with rankings
+- [x] User profile page with stats
+- [x] About page with project info
 - [ ] Deploy contracts to testnet
-- [ ] Wallet connection (MetaMask)
-- [ ] Bug submission form with camera integration
-- [ ] Voting interface
-- [ ] NFT collection view
+- [ ] Wallet connection (MetaMask/WalletConnect)
+- [ ] Connect frontend to API routes
+- [ ] Test end-to-end flow (scan → vote → mint → collect)
 
 ### Future Features
 - [ ] Geolocation for bug discoveries

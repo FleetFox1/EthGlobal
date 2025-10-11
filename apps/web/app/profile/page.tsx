@@ -14,7 +14,7 @@ const USER_DATA = {
   pyusdValue: 6, // 100 BUG = 1 PYUSD
   votesSubmitted: 23,
   votingAccuracy: 87.5,
-  rank: 42,
+  rank: 69,
   achievements: [
     { id: 1, name: "First Bug", icon: "🐛", unlocked: true },
     { id: 2, name: "Bug Collector", icon: "📚", unlocked: true },

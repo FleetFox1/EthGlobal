@@ -53,6 +53,7 @@
 - **Framework**: [Hardhat](https://hardhat.org/)
 - **Libraries**: [OpenZeppelin v5](https://www.openzeppelin.com/contracts)
 - **Web3**: [Ethers.js v6](https://docs.ethers.org/)
+- **Wallet**: [Privy](https://privy.io/) - Multi-chain wallet authentication
 - **Storage**: [Lighthouse IPFS](https://lighthouse.storage/)
 
 ## 🚀 Quick Start
@@ -60,6 +61,7 @@
 ### Prerequisites
 - Node.js 20+
 - pnpm (`npm install -g pnpm`)
+- Privy App ID ([Get one free](https://dashboard.privy.io/))
 - Lighthouse API key ([Get one here](https://lighthouse.storage/))
 
 ### Installation
@@ -79,7 +81,13 @@ cp .env.example .env.local
 
 2. **Configure `.env.local`**:
 ```env
+# Privy Wallet Integration (REQUIRED)
+NEXT_PUBLIC_PRIVY_APP_ID=clprtxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+
+# IPFS Storage
 LIGHTHOUSE_API_KEY=your_api_key_here
+
+# Blockchain (after deployment)
 NEXT_PUBLIC_RPC_URL=http://127.0.0.1:8545  # Local Hardhat node
 NEXT_PUBLIC_BUG_TOKEN_ADDRESS=0x...         # After deployment
 NEXT_PUBLIC_BUG_NFT_ADDRESS=0x...           # After deployment

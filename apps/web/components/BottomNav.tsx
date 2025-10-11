@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { Menu, Settings, BookOpen, Trophy, User, Info, Wallet, Vote } from "lucide-react";
 import { ScanButton } from "@/components/ScanButton";
+import { WalletButton } from "@/components/WalletButton";
 
 export function BottomNav() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -119,16 +120,9 @@ export function BottomNav() {
               <div className="border-t border-border my-4" />
               
               {/* Wallet Connect Button */}
-              <Button
-                className="w-full gap-3 h-12"
-                onClick={() => {
-                  console.log("Connect Wallet");
-                  // TODO: Integrate Privy or RainbowKit
-                }}
-              >
-                <Wallet className="h-5 w-5" />
-                <span className="text-base">Connect Wallet</span>
-              </Button>
+              <div className="px-2">
+                <WalletButton />
+              </div>
             </div>
           </SheetContent>
         </Sheet>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -24,6 +25,7 @@ import { ScanButton } from "@/components/ScanButton";
 export function BottomNav() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const router = useRouter();
 
   return (
     <nav 
@@ -58,7 +60,7 @@ export function BottomNav() {
                 variant="ghost"
                 className="w-full justify-start gap-3 h-12"
                 onClick={() => {
-                  console.log("Navigate to Collection");
+                  router.push("/collection");
                   setSidebarOpen(false);
                 }}
               >

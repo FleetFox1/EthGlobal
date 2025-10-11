@@ -1,159 +1,286 @@
 # 🐛 BugDex
 
-> A Web3 mobile-first app for discovering and collecting bugs - built for EthGlobal
+> A Web3 mobile-first app for discovering and collecting bugs - built for EthGlobal 2025
 
 ![Next.js](https://img.shields.io/badge/Next.js-15.5-black?style=flat-square&logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?style=flat-square&logo=typescript)
+![Solidity](https://img.shields.io/badge/Solidity-0.8.27-gray?style=flat-square&logo=solidity)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.1-38bdf8?style=flat-square&logo=tailwindcss)
-![ShadCN UI](https://img.shields.io/badge/ShadCN-UI-black?style=flat-square)
 
 ## 📖 About
 
-**BugDex** is a Web3-powered bug collection application where users can scan, discover, and collect bugs in an interactive, gamified experience. Built with modern web technologies and optimized for mobile devices.
+**BugDex** is a Web3-powered bug collection platform where users discover, vote on, and collect bug NFTs. Built with smart contracts, IPFS storage, and a mobile-first interface.
+
+### How It Works
+1. 📸 **Discover** - Scan or upload bug images
+2. 🗳️ **Vote** - Community votes on submissions (stake 10 BUG tokens)
+3. 🎁 **Collect** - Approved bugs become NFTs + voters earn rewards
+4. 💎 **Trade** - Collect rare bugs and build your collection
 
 ## ✨ Features
 
-- 🎯 **Mobile-First Design** - Optimized for mobile viewing and interaction
-- 📱 **Fixed Bottom Navigation** - Easy access to core features
-- 🔍 **Prominent Scan Button** - Large, circular button for bug scanning
-- 🎨 **Modern UI** - Built with ShadCN UI components and Tailwind CSS
-- 🌗 **Dark Mode Ready** - Supports light and dark themes
-- ⚡ **Fast & Responsive** - Built with Next.js 15 and Turbopack
-- 🎭 **Smooth Animations** - Polished transitions and hover effects
+### Frontend
+- 🎯 **Mobile-First Design** - PWA-ready, optimized for phones
+- 📱 **Bottom Navigation** - Hamburger menu, scan button, settings
+- 🎨 **Modern UI** - ShadCN UI components with Tailwind CSS
+- 🌗 **Dark Mode** - Full theme support
+- ⚡ **Fast & Responsive** - Next.js 15 with Turbopack
+
+### Backend
+- 🔗 **Smart Contracts** - BUG token (ERC-20), Bug NFTs (ERC-721), Voting system
+- 🌐 **IPFS Storage** - Lighthouse SDK for decentralized image/metadata storage
+- 🔌 **API Routes** - Submit bugs, vote, query submissions, user profiles
+- 🪙 **Tokenomics** - Faucet system, staking, rewards
 
 ## 🏗️ Tech Stack
 
+### Frontend
 - **Framework**: [Next.js 15](https://nextjs.org/) (App Router)
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
 - **Styling**: [Tailwind CSS 4.1](https://tailwindcss.com/)
-- **UI Components**: [ShadCN UI](https://ui.shadcn.com/)
+- **UI**: [ShadCN UI](https://ui.shadcn.com/)
 - **Icons**: [Lucide React](https://lucide.dev/)
-- **Package Manager**: [pnpm](https://pnpm.io/)
 
-## 🚀 Getting Started
+### Backend / Blockchain
+- **Smart Contracts**: [Solidity 0.8.27](https://soliditylang.org/)
+- **Framework**: [Hardhat](https://hardhat.org/)
+- **Libraries**: [OpenZeppelin v5](https://www.openzeppelin.com/contracts)
+- **Web3**: [Ethers.js v6](https://docs.ethers.org/)
+- **Storage**: [Lighthouse IPFS](https://lighthouse.storage/)
+
+## 🚀 Quick Start
 
 ### Prerequisites
-
-- Node.js 20+ installed
-- pnpm installed (`npm install -g pnpm`)
+- Node.js 20+
+- pnpm (`npm install -g pnpm`)
+- Lighthouse API key ([Get one here](https://lighthouse.storage/))
 
 ### Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone <your-repo-url>
-   cd EthGlobal
-   ```
+```bash
+# Clone repository
+git clone https://github.com/FleetFox1/EthGlobal.git
+cd EthGlobal
+```
 
-2. **Navigate to the web app**
-   ```bash
-   cd apps/web
-   ```
+### Configuration
 
-3. **Install dependencies**
-   ```bash
-   pnpm install
-   ```
+1. **Set up environment variables** (in `apps/web/`):
+```bash
+cp .env.example .env.local
+```
 
-4. **Run the development server**
-   ```bash
-   pnpm dev
-   ```
+2. **Configure `.env.local`**:
+```env
+LIGHTHOUSE_API_KEY=your_api_key_here
+NEXT_PUBLIC_RPC_URL=http://127.0.0.1:8545  # Local Hardhat node
+NEXT_PUBLIC_BUG_TOKEN_ADDRESS=0x...         # After deployment
+NEXT_PUBLIC_BUG_NFT_ADDRESS=0x...           # After deployment
+NEXT_PUBLIC_BUG_VOTING_ADDRESS=0x...        # After deployment
+```
 
-5. **Open your browser**
-   
-   Visit [http://localhost:3000](http://localhost:3000)
+### Running the Application
 
-## 📁 Project Structure
+#### 1. Deploy Smart Contracts (Terminal 1)
+```bash
+cd apps/contracts
+
+# Start local Hardhat node
+pnpm run node
+
+# In another terminal, deploy contracts
+pnpm run deploy:local
+
+# Copy contract addresses to apps/web/.env.local
+```
+
+#### 2. Run Tests (Optional)
+```bash
+cd apps/contracts
+pnpm test
+```
+
+#### 3. Run Frontend (Terminal 2)
+```bash
+cd apps/web
+pnpm install
+pnpm dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## � API Routes
+
+The backend provides REST endpoints for bug submission, voting, and data queries. See [`apps/web/API_DOCUMENTATION.md`](apps/web/API_DOCUMENTATION.md) for full details.
+
+### Quick Reference
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/submit-bug` | POST | Submit bug with image (multipart/form-data) |
+| `/api/vote` | POST | Vote on submission (requires signature) |
+| `/api/submissions` | GET | Query active/resolved submissions |
+| `/api/user/[address]` | GET | Get user's NFTs and stats |
+
+## �📁 Project Structure
 
 ```
 EthGlobal/
-└── apps/
-    └── web/
-        ├── app/
-        │   ├── layout.tsx
-        │   ├── page.tsx          # Main homepage
-        │   └── globals.css
-        ├── components/
-        │   ├── ui/               # ShadCN UI components
-        │   │   ├── button.tsx
-        │   │   ├── sheet.tsx
-        │   │   └── dialog.tsx
-        │   ├── BottomNav.tsx     # Bottom navigation bar
-        │   └── ScanButton.tsx    # Circular scan button
-        ├── lib/
-        │   └── utils.ts
-        └── package.json
+├── apps/
+│   ├── contracts/              # Smart contracts (Hardhat)
+│   │   ├── contracts/
+│   │   │   ├── BugToken.sol   # ERC-20 token
+│   │   │   ├── BugNFT.sol     # ERC-721 NFT
+│   │   │   └── BugVoting.sol  # Voting system
+│   │   ├── scripts/
+│   │   │   └── deploy.ts
+│   │   └── test/
+│   │       └── BugDex.test.ts
+│   └── web/                    # Next.js frontend
+│       ├── app/
+│       │   ├── api/            # API routes
+│       │   │   ├── submit-bug/
+│       │   │   ├── vote/
+│       │   │   ├── submissions/
+│       │   │   └── user/
+│       │   ├── layout.tsx
+│       │   └── page.tsx        # Homepage
+│       ├── components/
+│       │   ├── ui/             # ShadCN UI components
+│       │   ├── BottomNav.tsx
+│       │   └── ScanButton.tsx
+│       └── lib/
+│           ├── contracts.ts    # Ethers.js contract utilities
+│           ├── lighthouse.ts   # IPFS upload utilities
+│           └── utils.ts
+├── GIT_WORKFLOW.md             # Team collaboration guide
+└── README.md
 ```
 
-## 🎨 Components
+## 🔗 Smart Contracts
 
-### BottomNav
-The fixed bottom navigation bar includes:
-- **Left**: Hamburger menu (opens sidebar with Sheet component)
-- **Center**: Large circular Scan button (elevated design)
-- **Right**: Settings icon (opens settings dialog)
+### BugToken (ERC-20)
+- **Faucet**: Users claim 100 BUG tokens daily
+- **Staking**: Required for voting (10 BUG per vote)
+- **Max Supply**: 100,000,000 BUG
 
-### ScanButton
-A prominent, circular button with:
-- Scan icon from Lucide React
-- Hover animations (scale + shadow)
-- Click handler ready for bug scanning logic
+### BugNFT (ERC-721)
+- **Metadata**: IPFS-based with image hash, rarity, discoverer
+- **Rarity System**: 5 levels (Common → Legendary)
+- **Verification**: Community-driven validation
+
+### BugVoting
+- **Submission**: Users submit bugs with IPFS metadata
+- **Voting Period**: 3 days from submission
+- **Auto-Resolution**: Mints NFT at 5 votes
+- **Rewards**: 50% to discoverer, 50% split among voters
+
+## 🎨 Key Features
+
+### Mobile-First UI
+- Fixed bottom navigation with safe-area-inset support
+- Hamburger menu (Sheet sidebar) and settings (Dialog modal)
+- Large, elevated circular scan button
+- Responsive design with Tailwind CSS
+
+### IPFS Integration
+- Image uploads via Lighthouse SDK
+- Automatic metadata generation
+- Gateway URL retrieval for NFT display
+
+### Wallet Integration (Coming Soon)
+- MetaMask/WalletConnect support
+- Transaction signing for votes/submissions
+- Real-time balance updates
 
 ## 🛠️ Available Scripts
 
+### Frontend (`apps/web`)
 ```bash
-# Development
 pnpm dev          # Start dev server with Turbopack
-
-# Production
-pnpm build        # Build for production
+pnpm build        # Production build
 pnpm start        # Start production server
-
-# Code Quality
-pnpm lint         # Run ESLint
+pnpm lint         # ESLint
 ```
 
-## 🗺️ Roadmap
+### Contracts (`apps/contracts`)
+```bash
+pnpm compile      # Compile contracts
+pnpm test         # Run tests
+pnpm node         # Start local Hardhat node
+pnpm deploy:local # Deploy to local node
+```
 
-- [ ] Implement bug scanning functionality
-- [ ] Add bug collection grid/list view
-- [ ] Integrate Web3 wallet connection
-- [ ] Add user stats and achievements
-- [ ] Implement leaderboard system
-- [ ] Add profile management
-- [ ] Create bug detail views
-- [ ] Add social sharing features
+## 👥 Team Collaboration
 
-## 🎯 TODO
+This project uses a **branch-based workflow**:
 
-### Sidebar Menu
-- Navigation menu items
-- Links to Collection, Leaderboard, Profile, About
+- **`main`** - Production-ready code
+- **`backend/contracts`** - Smart contracts, API routes, IPFS integration
+- **`frontend/ui`** - UI components, pages, styling
 
-### Settings Modal
-- Notification preferences
-- Camera permissions
-- Theme toggle (light/dark)
-- Account management
+See [`GIT_WORKFLOW.md`](GIT_WORKFLOW.md) for detailed collaboration instructions.
 
-### Main Page
-- Bug collection grid/list
-- User stats display
-- Recent activity feed
+## 📚 Documentation
 
-## 📝 License
+- **[API Documentation](apps/web/API_DOCUMENTATION.md)** - Complete API reference with examples
+- **[Smart Contracts README](apps/contracts/README.md)** - Contract architecture and testing
+- **[Git Workflow](GIT_WORKFLOW.md)** - Branching strategy and collaboration guide
 
-MIT License - feel free to use this project for your own purposes.
+## 🧪 Testing
+
+```bash
+cd apps/contracts
+pnpm test
+```
+
+Current test coverage:
+- ✅ BugToken faucet and minting
+- ✅ BugNFT minting and metadata
+- ✅ BugVoting submission and voting
+- ✅ Reward distribution
+- ✅ Auto-resolution at 5 votes
+
+## 🚧 Roadmap
+
+### MVP (Current Phase)
+- [x] Smart contracts (BugToken, BugNFT, BugVoting)
+- [x] IPFS integration with Lighthouse
+- [x] API routes for submission, voting, queries
+- [x] Mobile-first homepage with bottom navigation
+- [ ] Deploy contracts to testnet
+- [ ] Wallet connection (MetaMask)
+- [ ] Bug submission form with camera integration
+- [ ] Voting interface
+- [ ] NFT collection view
+
+### Future Features
+- [ ] Geolocation for bug discoveries
+- [ ] AR bug scanning
+- [ ] Trading marketplace
+- [ ] Leaderboards and achievements
+- [ ] Multi-chain support
 
 ## 🤝 Contributing
 
-Contributions, issues, and feature requests are welcome!
+We're building this for **ETHGlobal 2025**! If you're on the team:
 
-## 📧 Contact
+1. Check the current branch strategy in `GIT_WORKFLOW.md`
+2. Create a feature branch from `backend/contracts` or `frontend/ui`
+3. Make your changes and test locally
+4. Submit a PR with clear description
 
-Built with ❤️ for EthGlobal
+## 📝 License
+
+MIT License - see LICENSE file for details
+
+## 🔗 Links
+
+- **GitHub**: [FleetFox1/EthGlobal](https://github.com/FleetFox1/EthGlobal)
+- **Lighthouse**: [lighthouse.storage](https://lighthouse.storage/)
+- **ETHGlobal**: [ethglobal.com](https://ethglobal.com/)
 
 ---
 
-⭐ Star this repo if you find it helpful!
+Built with ❤️ for **ETHGlobal 2025** 🐛
+

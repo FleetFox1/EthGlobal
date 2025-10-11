@@ -1,6 +1,9 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import hre from "hardhat";
 import { BugToken, BugNFT, BugVoting } from "../typechain-types";
+
+// @ts-ignore - Hardhat Runtime Environment ethers
+const { ethers } = hre;
 
 describe("BugDex Contracts", function () {
   let bugToken: BugToken;
@@ -11,6 +14,7 @@ describe("BugDex Contracts", function () {
   let user2: any;
 
   beforeEach(async function () {
+    // @ts-ignore - Hardhat ethers type issue
     [owner, user1, user2] = await ethers.getSigners();
 
     // Deploy BugToken

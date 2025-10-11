@@ -19,7 +19,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Menu, Settings, BookOpen, Trophy, User, Info, Wallet } from "lucide-react";
+import { Menu, Settings, BookOpen, Trophy, User, Info, Wallet, Vote } from "lucide-react";
 import { ScanButton } from "@/components/ScanButton";
 
 export function BottomNav() {
@@ -66,6 +66,18 @@ export function BottomNav() {
               >
                 <BookOpen className="h-5 w-5" />
                 <span className="text-base">My Collection</span>
+              </Button>
+              
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3 h-12"
+                onClick={() => {
+                  router.push("/voting");
+                  setSidebarOpen(false);
+                }}
+              >
+                <Vote className="h-5 w-5" />
+                <span className="text-base">Vote on Bugs</span>
               </Button>
               
               <Button

@@ -1,9 +1,11 @@
 import lighthouse from "@lighthouse-web3/sdk";
 
-const LIGHTHOUSE_API_KEY = process.env.LIGHTHOUSE_API_KEY!;
-
-if (!LIGHTHOUSE_API_KEY) {
-  throw new Error("LIGHTHOUSE_API_KEY is not defined in environment variables");
+function getAPIKey(): string {
+  const apiKey = process.env.LIGHTHOUSE_API_KEY;
+  if (!apiKey) {
+    throw new Error("LIGHTHOUSE_API_KEY is not defined in environment variables");
+  }
+  return apiKey;
 }
 
 /**
@@ -31,7 +33,7 @@ export async function uploadFileToIPFS(
     }
 
     // Upload to Lighthouse
-    const response = await lighthouse.upload(filePath, LIGHTHOUSE_API_KEY);
+    const response = await lighthouse.upload(filePath, getAPIKey());
     
     // Clean up temp file if we created one
     if (Buffer.isBuffer(file)) {
@@ -71,7 +73,7 @@ export async function uploadTextToIPFS(
     fs.writeFileSync(filePath, content, "utf-8");
 
     // Upload to Lighthouse
-    const response = await lighthouse.upload(filePath, LIGHTHOUSE_API_KEY);
+    const response = await lighthouse.upload(filePath, getAPIKey());
 
     // Clean up
     fs.unlinkSync(filePath);

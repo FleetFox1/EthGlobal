@@ -162,7 +162,7 @@ export async function getActiveSubmissions() {
     const activeIds = await votingContract.getActiveSubmissions();
 
     const submissions = await Promise.all(
-      activeIds.map((id) => getSubmissionDetails(Number(id)))
+      activeIds.map((id: bigint) => getSubmissionDetails(Number(id)))
     );
 
     return submissions;
@@ -195,7 +195,7 @@ export async function getUserNFTs(userAddress: string) {
     const tokenIds = await nftContract.getBugsByDiscoverer(userAddress);
 
     const nfts = await Promise.all(
-      tokenIds.map(async (id) => {
+      tokenIds.map(async (id: bigint) => {
         const metadata = await nftContract.getBugMetadata(id);
         return {
           tokenId: Number(id),

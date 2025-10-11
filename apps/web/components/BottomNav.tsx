@@ -72,7 +72,7 @@ export function BottomNav() {
                 variant="ghost"
                 className="w-full justify-start gap-3 h-12"
                 onClick={() => {
-                  console.log("Navigate to Leaderboard");
+                  router.push("/leaderboard");
                   setSidebarOpen(false);
                 }}
               >
@@ -84,7 +84,7 @@ export function BottomNav() {
                 variant="ghost"
                 className="w-full justify-start gap-3 h-12"
                 onClick={() => {
-                  console.log("Navigate to Profile");
+                  router.push("/profile");
                   setSidebarOpen(false);
                 }}
               >
@@ -96,7 +96,7 @@ export function BottomNav() {
                 variant="ghost"
                 className="w-full justify-start gap-3 h-12"
                 onClick={() => {
-                  console.log("Navigate to About");
+                  router.push("/about");
                   setSidebarOpen(false);
                 }}
               >

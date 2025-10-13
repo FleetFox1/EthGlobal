@@ -16,6 +16,7 @@ async function main() {
   // Deploy BugToken
   console.log("1️⃣  Deploying BugToken...");
   const BugToken = await ethers.getContractFactory("BugToken");
+  // @ts-ignore
   const bugToken = await BugToken.deploy();
   await bugToken.waitForDeployment();
   const bugTokenAddress = await bugToken.getAddress();

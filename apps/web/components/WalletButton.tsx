@@ -1,8 +1,9 @@
 'use client';
 
 import { useWallet } from '@/lib/useWallet';
+import { useUser } from '@/lib/useUser';
 import { Button } from '@/components/ui/button';
-import { Wallet, LogOut } from 'lucide-react';
+import { Wallet, LogOut, User } from 'lucide-react';
 
 interface WalletButtonProps {
   variant?: 'default' | 'compact';
@@ -10,6 +11,7 @@ interface WalletButtonProps {
 
 export function WalletButton({ variant = 'default' }: WalletButtonProps) {
   const { isReady, isConnected, address, connect, disconnect } = useWallet();
+  const { profile, loading: userLoading } = useUser();
 
   if (!isReady) {
     return (
@@ -26,8 +28,19 @@ export function WalletButton({ variant = 'default' }: WalletButtonProps) {
   if (isConnected && address) {
     return (
       <div className="flex items-center gap-2">
-        <div className={`${variant === 'compact' ? 'px-3 py-1.5' : 'flex-1 px-4 py-2.5'} bg-green-500/10 text-green-500 text-sm font-medium rounded-md border border-green-500/20 text-center`}>
-          {address.slice(0, 6)}...{address.slice(-4)}
+        <div className={`${variant === 'compact' ? 'px-3 py-1.5' : 'flex-1 px-4 py-2.5'} bg-green-500/10 text-green-500 text-sm font-medium rounded-md border border-green-500/20`}>
+          <div className="flex items-center gap-2">
+            <User className="h-4 w-4" />
+            <span>
+              {userLoading ? (
+                'Loading...'
+              ) : profile ? (
+                profile.username
+              ) : (
+                `${address.slice(0, 6)}...${address.slice(-4)}`
+              )}
+            </span>
+          </div>
         </div>
         <Button
           variant="outline"

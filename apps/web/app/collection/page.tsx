@@ -1,9 +1,11 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Grid3x3, List, Search } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, Grid3x3, List, Search, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useBugNFT, areContractsConfigured } from "@/lib/contract-hooks";
+import { useWallet } from "@/lib/useWallet";
 
 type Rarity = "common" | "rare" | "epic" | "legendary";
 type BugType = "beetle" | "butterfly" | "mantis" | "dragonfly";
@@ -17,6 +19,8 @@ interface Bug {
   type: BugType;
   foundDate: string;
   votes: number;
+  metadataCid?: string;
+  location?: string;
 }
 
 // Mock bug data - will be replaced with real NFT data from blockchain
@@ -106,9 +110,100 @@ export default function CollectionPage() {
   const [rarityFilter, setRarityFilter] = useState<RarityFilter>("all");
   const [sortBy, setSortBy] = useState<SortBy>("recent");
   const [searchQuery, setSearchQuery] = useState("");
+  const [bugs, setBugs] = useState<Bug[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const { isConnected, address } = useWallet();
+  const { getBalance, getBugsByDiscoverer, getBugMetadata } = useBugNFT();
+
+  // Load user's NFTs from blockchain
+  useEffect(() => {
+    loadNFTs();
+  }, [isConnected, address]);
+
+  const loadNFTs = async () => {
+    setIsLoading(true);
+    try {
+      // If contracts not configured or no wallet, show mock data
+      if (!areContractsConfigured() || !isConnected || !address) {
+        console.log("⚠️ No wallet connected or contracts not configured - using mock data");
+        setBugs(MOCK_BUGS);
+        setIsLoading(false);
+        return;
+      }
+
+      // Fetch user's NFT token IDs
+      const tokenIds = await getBugsByDiscoverer(address);
+      
+      if (tokenIds.length === 0) {
+        console.log("No NFTs found for user");
+        setBugs([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // Fetch metadata for each NFT
+      const nftData: Bug[] = await Promise.all(
+        tokenIds.map(async (tokenId: number) => {
+          try {
+            const bugMetadata = await getBugMetadata(tokenId);
+            const metadataCid = (bugMetadata as any).ipfsHash;
+            
+            // Fetch metadata from IPFS
+            const metadataUrl = `https://gateway.lighthouse.storage/ipfs/${metadataCid}`;
+            const metadataRes = await fetch(metadataUrl);
+            const metadata = await metadataRes.json();
+
+            // Extract image URL
+            let imageUrl = metadata.image?.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/') || 
+                          "https://images.unsplash.com/photo-1582515073490-39981397c445?w=400&h=400&fit=crop";
+
+            // Determine rarity based on metadata or default
+            const rarity: Rarity = metadata.attributes?.find((a: any) => a.trait_type === "Rarity")?.value?.toLowerCase() || "common";
+            
+            // Extract bug type from metadata
+            const bugType: BugType = metadata.attributes?.find((a: any) => a.trait_type === "Type")?.value?.toLowerCase() || "beetle";
+
+            return {
+              id: Number(tokenId),
+              name: metadata.name || `Bug #${tokenId}`,
+              species: metadata.description || "Unknown Species",
+              imageUrl,
+              rarity,
+              type: bugType,
+              foundDate: metadata.attributes?.find((a: any) => a.trait_type === "Discovery Date")?.value || new Date().toISOString().split('T')[0],
+              votes: metadata.attributes?.find((a: any) => a.trait_type === "Votes")?.value || 0,
+              metadataCid,
+              location: metadata.attributes?.find((a: any) => a.trait_type === "Location")?.value || "Unknown",
+            };
+          } catch (error) {
+            console.error(`Failed to fetch metadata for token ${tokenId}:`, error);
+            return {
+              id: Number(tokenId),
+              name: `Bug #${tokenId}`,
+              species: "Unknown Species",
+              imageUrl: "https://images.unsplash.com/photo-1582515073490-39981397c445?w=400&h=400&fit=crop",
+              rarity: "common" as Rarity,
+              type: "beetle" as BugType,
+              foundDate: new Date().toISOString().split('T')[0],
+              votes: 0,
+            };
+          }
+        })
+      );
+
+      setBugs(nftData);
+    } catch (error) {
+      console.error("Failed to load NFTs:", error);
+      // Fallback to mock data
+      setBugs(MOCK_BUGS);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Filter and sort bugs
-  const filteredBugs = MOCK_BUGS
+  const filteredBugs = bugs
     .filter((bug) => {
       // Apply rarity filter
       if (rarityFilter !== "all" && bug.rarity !== rarityFilter) return false;
@@ -226,16 +321,25 @@ export default function CollectionPage() {
 
       {/* Bug Collection */}
       <main className="container mx-auto px-4 py-6">
-        {filteredBugs.length === 0 ? (
+        {isLoading ? (
+          <div className="text-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
+            <p className="text-muted-foreground">Loading your collection...</p>
+          </div>
+        ) : filteredBugs.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-muted-foreground text-lg mb-4">
               {searchQuery || rarityFilter !== "all"
                 ? "No bugs match your filters"
-                : "No bugs collected yet"}
+                : isConnected 
+                  ? "No bugs collected yet. Start scanning to build your collection!"
+                  : "Connect your wallet to view your collection"}
             </p>
-            <Link href="/">
-              <Button>Start Scanning</Button>
-            </Link>
+            {isConnected ? (
+              <Link href="/">
+                <Button>Start Scanning</Button>
+              </Link>
+            ) : null}
           </div>
         ) : viewMode === "grid" ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">

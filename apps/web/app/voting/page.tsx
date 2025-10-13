@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ThumbsUp, ThumbsDown, CheckCircle2, Clock, TrendingUp } from "lucide-react";
+import { ArrowLeft, ThumbsUp, ThumbsDown, CheckCircle2, Clock, TrendingUp, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useBugVoting, areContractsConfigured } from "@/lib/contract-hooks";
+import { useWallet } from "@/lib/useWallet";
 
 interface BugSubmission {
   id: number;
@@ -18,6 +20,8 @@ interface BugSubmission {
   requiredVotes: number;
   status: "pending" | "approved" | "rejected";
   userVote?: "real" | "fake" | null;
+  metadataCid?: string; // IPFS metadata CID
+  canClaimNFT?: boolean; // If approved and user is discoverer
 }
 
 // Mock bug submissions
@@ -75,10 +79,166 @@ const MOCK_SUBMISSIONS: BugSubmission[] = [
 ];
 
 export default function VotingPage() {
-  const [submissions, setSubmissions] = useState(MOCK_SUBMISSIONS);
+  const [submissions, setSubmissions] = useState<BugSubmission[]>([]);
   const [filter, setFilter] = useState<"all" | "pending" | "voted">("pending");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isVoting, setIsVoting] = useState<number | null>(null);
+  const [isClaiming, setIsClaiming] = useState<number | null>(null);
+  
+  const { isConnected, address } = useWallet();
+  const { getActiveSubmissions, vote, claimNFT } = useBugVoting();
 
-  const handleVote = (submissionId: number, vote: "real" | "fake") => {
+  // Load submissions from blockchain
+  useEffect(() => {
+    loadSubmissions();
+  }, [isConnected, address]);
+
+  const loadSubmissions = async () => {
+    setIsLoading(true);
+    try {
+      // If contracts not configured, show mock data
+      if (!areContractsConfigured()) {
+        console.log("⚠️ Contracts not configured - using mock data");
+        setSubmissions(MOCK_SUBMISSIONS);
+        setIsLoading(false);
+        return;
+      }
+
+      // Fetch real submissions from blockchain
+      const activeSubmissions = await getActiveSubmissions();
+      
+      // Transform blockchain data to UI format
+      const formattedSubmissions: BugSubmission[] = await Promise.all(
+        activeSubmissions.map(async (sub: any, index: number) => {
+          // Fetch metadata from IPFS if available
+          let imageUrl = "https://images.unsplash.com/photo-1582515073490-39981397c445?w=600&h=600&fit=crop";
+          
+          if (sub.metadataCid) {
+            try {
+              const metadataUrl = `https://gateway.lighthouse.storage/ipfs/${sub.metadataCid}`;
+              const metadataRes = await fetch(metadataUrl);
+              const metadata = await metadataRes.json();
+              if (metadata.image) {
+                imageUrl = metadata.image.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/');
+              }
+            } catch (err) {
+              console.error("Failed to fetch metadata:", err);
+            }
+          }
+
+          // Calculate status
+          let status: "pending" | "approved" | "rejected" = "pending";
+          if (sub.votesFor + sub.votesAgainst >= sub.requiredVotes) {
+            const realPercentage = (sub.votesFor / (sub.votesFor + sub.votesAgainst)) * 100;
+            status = realPercentage >= 70 ? "approved" : "rejected";
+          }
+
+          // Check if user can claim NFT
+          const canClaimNFT = status === "approved" && 
+                             sub.discoverer?.toLowerCase() === address?.toLowerCase() &&
+                             !sub.nftMinted;
+
+          return {
+            id: Number(sub.id),
+            imageUrl,
+            submittedBy: sub.discoverer?.slice(0, 6) + "..." + sub.discoverer?.slice(-4) || "Unknown",
+            submittedAt: new Date(Number(sub.timestamp) * 1000).toISOString(),
+            votes: {
+              real: Number(sub.votesFor),
+              fake: Number(sub.votesAgainst),
+              total: Number(sub.votesFor) + Number(sub.votesAgainst),
+            },
+            requiredVotes: Number(sub.requiredVotes),
+            status,
+            userVote: sub.hasVoted ? (sub.votedFor ? "real" : "fake") : null,
+            metadataCid: sub.metadataCid,
+            canClaimNFT,
+          };
+        })
+      );
+
+      setSubmissions(formattedSubmissions);
+    } catch (error) {
+      console.error("Failed to load submissions:", error);
+      // Fallback to mock data
+      setSubmissions(MOCK_SUBMISSIONS);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVote = async (submissionId: number, voteChoice: "real" | "fake") => {
+    if (!isConnected || !address) {
+      alert("Please connect your wallet to vote!");
+      return;
+    }
+
+    if (!areContractsConfigured()) {
+      // Mock voting for demo
+      setSubmissions((prev) =>
+        prev.map((submission) => {
+          if (submission.id === submissionId) {
+            const newVotes = {
+              real: submission.votes.real + (voteChoice === "real" ? 1 : 0),
+              fake: submission.votes.fake + (voteChoice === "fake" ? 1 : 0),
+              total: submission.votes.total + 1,
+            };
+            let newStatus = submission.status;
+            if (newVotes.total >= submission.requiredVotes) {
+              const realPercentage = (newVotes.real / newVotes.total) * 100;
+              newStatus = realPercentage >= 70 ? "approved" : "rejected";
+            }
+            return { ...submission, votes: newVotes, status: newStatus, userVote: voteChoice };
+          }
+          return submission;
+        })
+      );
+      return;
+    }
+
+    setIsVoting(submissionId);
+    try {
+      console.log(`📝 Voting ${voteChoice} on submission ${submissionId}...`);
+      const txHash = await vote(submissionId, voteChoice === "real");
+      console.log("✅ Vote submitted:", txHash);
+      
+      // Reload submissions to reflect new vote
+      await loadSubmissions();
+      
+      alert(`Vote recorded!\n\nYou earned 5 BUG tokens!\nTx: ${txHash}`);
+    } catch (error: any) {
+      console.error("Vote failed:", error);
+      alert(`Failed to vote: ${error.message || "Unknown error"}`);
+    } finally {
+      setIsVoting(null);
+    }
+  };
+
+  const handleClaimNFT = async (submissionId: number) => {
+    if (!isConnected || !address) {
+      alert("Please connect your wallet!");
+      return;
+    }
+
+    setIsClaiming(submissionId);
+    try {
+      console.log(`🎨 Claiming NFT for submission ${submissionId}...`);
+      const txHash = await claimNFT(submissionId);
+      console.log("✅ NFT claimed:", txHash);
+      
+      // Reload submissions
+      await loadSubmissions();
+      
+      alert(`NFT minted successfully!\n\nCheck your collection!\nTx: ${txHash}`);
+    } catch (error: any) {
+      console.error("Claim failed:", error);
+      alert(`Failed to claim NFT: ${error.message || "Unknown error"}`);
+    } finally {
+      setIsClaiming(null);
+    }
+  };
+
+  const handleVote_old = (submissionId: number, vote: "real" | "fake") => {
     setSubmissions((prev) =>
       prev.map((submission) => {
         if (submission.id === submissionId) {
@@ -179,7 +339,12 @@ export default function VotingPage() {
         </div>
 
         {/* Submissions Grid */}
-        {filteredSubmissions.length === 0 ? (
+        {isLoading ? (
+          <div className="text-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
+            <p className="text-muted-foreground">Loading submissions...</p>
+          </div>
+        ) : filteredSubmissions.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-muted-foreground text-lg mb-4">
               {filter === "pending" ? "No pending submissions" : "No submissions found"}
@@ -197,6 +362,9 @@ export default function VotingPage() {
                 key={submission.id}
                 submission={submission}
                 onVote={handleVote}
+                onClaimNFT={handleClaimNFT}
+                isVoting={isVoting === submission.id}
+                isClaiming={isClaiming === submission.id}
               />
             ))}
           </div>
@@ -209,9 +377,15 @@ export default function VotingPage() {
 function VotingCard({
   submission,
   onVote,
+  onClaimNFT,
+  isVoting,
+  isClaiming,
 }: {
   submission: BugSubmission;
   onVote: (id: number, vote: "real" | "fake") => void;
+  onClaimNFT?: (id: number) => void;
+  isVoting?: boolean;
+  isClaiming?: boolean;
 }) {
   const realPercentage = submission.votes.total > 0
     ? (submission.votes.real / submission.votes.total) * 100
@@ -324,19 +498,46 @@ function VotingCard({
           <div className="grid grid-cols-2 gap-3">
             <Button
               onClick={() => onVote(submission.id, "real")}
-              className="bg-green-500 hover:bg-green-600 text-white"
+              disabled={isVoting}
+              className="bg-green-500 hover:bg-green-600 text-white disabled:opacity-50"
             >
-              <ThumbsUp className="h-4 w-4 mr-2" />
+              {isVoting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <ThumbsUp className="h-4 w-4 mr-2" />
+              )}
               Real
             </Button>
             <Button
               onClick={() => onVote(submission.id, "fake")}
-              className="bg-red-500 hover:bg-red-600 text-white"
+              disabled={isVoting}
+              className="bg-red-500 hover:bg-red-600 text-white disabled:opacity-50"
             >
-              <ThumbsDown className="h-4 w-4 mr-2" />
+              {isVoting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <ThumbsDown className="h-4 w-4 mr-2" />
+              )}
               Fake
             </Button>
           </div>
+        ) : submission.canClaimNFT && onClaimNFT ? (
+          <Button
+            onClick={() => onClaimNFT(submission.id)}
+            disabled={isClaiming}
+            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+          >
+            {isClaiming ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Minting NFT...
+              </>
+            ) : (
+              <>
+                🎨 Claim NFT
+              </>
+            )}
+          </Button>
         ) : submission.userVote ? (
           <div className={`text-center py-2 rounded-lg font-semibold ${
             submission.userVote === "real"

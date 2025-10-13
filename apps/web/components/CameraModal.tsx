@@ -12,8 +12,8 @@ import {
 import { Camera, Upload, X, RotateCw, Check, MapPin } from "lucide-react";
 import { getUserLocation, checkGeolocationPermission, type LocationData } from "@/lib/geolocation";
 import { uploadBugSubmission } from "@/lib/ipfs-client";
-import { useWallet } from "@/lib/useWallet";
-import { useBugVoting, areContractsConfigured } from "@/lib/contract-hooks";
+import { useUser } from "@/lib/useUser";
+import { ethers } from "ethers";
 
 interface CameraModalProps {
   open: boolean;
@@ -34,11 +34,8 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Get wallet info
-  const { address, isConnected } = useWallet();
-  
-  // Get contract interaction hooks
-  const { submitBug: submitBugToContract } = useBugVoting();
+  // Get wallet info from useUser
+  const { walletAddress, isAuthenticated } = useUser();
 
   // Start camera
   const startCamera = async () => {
@@ -150,7 +147,7 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
     if (!capturedImage) return;
 
     // Check if wallet is connected
-    if (!isConnected || !address) {
+    if (!isAuthenticated || !walletAddress) {
       setError('Please connect your wallet to submit a bug.');
       return;
     }
@@ -175,27 +172,38 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
           latitude: locationData.latitude,
           longitude: locationData.longitude,
         },
-        discoverer: address,
+        discoverer: walletAddress,
       });
 
       console.log("✅ IPFS Upload complete!");
       console.log("Image CID:", ipfsResult.imageCid);
       console.log("Metadata CID:", ipfsResult.metadataCid);
 
-      // Step 2: Submit to blockchain (if contracts are configured)
-      if (areContractsConfigured()) {
-        console.log("📝 Step 2: Submitting to blockchain...");
-        
-        const txHash = await submitBugToContract(ipfsResult.metadataCid, 0); // 0 = common rarity
-        
-        console.log("✅ Blockchain submission complete!");
-        console.log("Transaction hash:", txHash);
-        
-        alert(`Bug submitted successfully!\n\nIPFS: ${ipfsResult.metadataCid}\nTx: ${txHash}\n\nYour bug is now pending community vote!`);
-      } else {
-        console.log("⚠️ Contracts not configured - skipping blockchain submission");
-        alert(`Bug uploaded to IPFS!\n\nMetadata: ${ipfsResult.metadataCid}\n\n(Contracts not deployed yet - blockchain submission skipped)`);
+      // Save to user's collection
+      const saveResponse = await fetch('/api/uploads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageCid: ipfsResult.imageCid,
+          metadataCid: ipfsResult.metadataCid,
+          imageUrl: ipfsResult.imageUrl,
+          metadataUrl: ipfsResult.metadataUrl,
+          discoverer: walletAddress,
+          location: locationData,
+        }),
+      });
+
+      const saveData = await saveResponse.json();
+      
+      if (saveData.success) {
+        console.log('✅ Saved to collection:', saveData.data.upload.id);
       }
+
+      // Show success with IPFS links
+      const imageUrl = `https://gateway.lighthouse.storage/ipfs/${ipfsResult.imageCid}`;
+      const metadataUrl = `https://gateway.lighthouse.storage/ipfs/${ipfsResult.metadataCid}`;
+      
+      alert(`🎉 Bug uploaded to IPFS and saved to your collection!\n\n📸 View in your Collection page to submit for voting!`);
       
       // Reset and close
       handleClose();

@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/dialog";
 import { Camera, Upload, X, RotateCw, Check, MapPin } from "lucide-react";
 import { getUserLocation, checkGeolocationPermission, type LocationData } from "@/lib/geolocation";
+import { uploadBugSubmission } from "@/lib/ipfs-client";
+import { useWallet } from "@/lib/useWallet";
 
 interface CameraModalProps {
   open: boolean;
@@ -30,6 +32,9 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Get wallet info
+  const { address, isConnected } = useWallet();
 
   // Start camera
   const startCamera = async () => {
@@ -140,6 +145,12 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
   const handleSubmit = async () => {
     if (!capturedImage) return;
 
+    // Check if wallet is connected
+    if (!isConnected || !address) {
+      setError('Please connect your wallet to submit a bug.');
+      return;
+    }
+
     // Check if we have location data
     if (!locationData) {
       setError('Location data required. Please enable location access.');
@@ -149,27 +160,36 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
     setIsProcessing(true);
     
     try {
-      // TODO: Implement blockchain integration
-      // 1. Upload image to IPFS via Lighthouse
-      // 2. Include location state in metadata
-      // 3. Submit to BugVoting contract
-      // 4. Return transaction hash
+      console.log("📤 Uploading bug to IPFS...");
       
-      console.log("Submitting bug with metadata...");
-      console.log("Image data length:", capturedImage.length);
-      console.log("Location data:", locationData);
+      // Upload to IPFS
+      const ipfsResult = await uploadBugSubmission({
+        imageData: capturedImage,
+        location: {
+          state: locationData.state,
+          country: locationData.country,
+          latitude: locationData.latitude,
+          longitude: locationData.longitude,
+        },
+        discoverer: address,
+      });
+
+      console.log("✅ Upload complete!");
+      console.log("Image CID:", ipfsResult.imageCid);
+      console.log("Metadata CID:", ipfsResult.metadataCid);
+      console.log("Image URL:", ipfsResult.imageUrl);
+      console.log("Metadata URL:", ipfsResult.metadataUrl);
+
+      // TODO: Submit to blockchain contract
+      // Call BugVoting.submitBug(metadataCid) here
       
-      // Simulate processing delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      
-      // TODO: Navigate to voting page or show success message
-      alert(`Bug submitted from ${locationData.state}! (Mock - Blockchain integration needed)`);
+      alert(`Bug uploaded to IPFS!\nImage: ${ipfsResult.imageCid}\nMetadata: ${ipfsResult.metadataCid}\n\n(Next: Submit to blockchain)`);
       
       // Reset and close
       handleClose();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Submission error:", err);
-      setError("Failed to submit bug. Please try again.");
+      setError(err.message || "Failed to submit bug. Please try again.");
     } finally {
       setIsProcessing(false);
     }

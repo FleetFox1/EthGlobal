@@ -9,7 +9,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Camera, Upload, X, RotateCw, Check } from "lucide-react";
+import { Camera, Upload, X, RotateCw, Check, MapPin } from "lucide-react";
+import { getUserLocation, checkGeolocationPermission, type LocationData } from "@/lib/geolocation";
 
 interface CameraModalProps {
   open: boolean;
@@ -22,6 +23,9 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [locationData, setLocationData] = useState<LocationData | null>(null);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -55,6 +59,32 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
       setIsCameraActive(false);
     }
   };
+
+  // Get user's location
+  const getLocation = async () => {
+    setIsGettingLocation(true);
+    setError(null);
+
+    try {
+      const location = await getUserLocation();
+      setLocationData(location);
+      setLocationPermission('granted');
+      console.log('Location obtained:', location);
+    } catch (err: any) {
+      console.error('Location error:', err);
+      setError(err.message || 'Failed to get location');
+      setLocationPermission('denied');
+    } finally {
+      setIsGettingLocation(false);
+    }
+  };
+
+  // Check location permission on mount
+  useEffect(() => {
+    if (open) {
+      checkGeolocationPermission().then(setLocationPermission);
+    }
+  }, [open]);
 
   // Capture photo from camera
   const capturePhoto = () => {
@@ -110,23 +140,30 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
   const handleSubmit = async () => {
     if (!capturedImage) return;
 
+    // Check if we have location data
+    if (!locationData) {
+      setError('Location data required. Please enable location access.');
+      return;
+    }
+
     setIsProcessing(true);
     
     try {
-      // TODO: Implement backend integration
+      // TODO: Implement blockchain integration
       // 1. Upload image to IPFS via Lighthouse
-      // 2. Run AI detection or manual classification
-      // 3. Submit to voting system
-      // 4. Return bug metadata
+      // 2. Include location state in metadata
+      // 3. Submit to BugVoting contract
+      // 4. Return transaction hash
       
-      console.log("Submitting bug image for processing...");
+      console.log("Submitting bug with metadata...");
       console.log("Image data length:", capturedImage.length);
+      console.log("Location data:", locationData);
       
       // Simulate processing delay
       await new Promise((resolve) => setTimeout(resolve, 2000));
       
       // TODO: Navigate to voting page or show success message
-      alert("Bug submitted successfully! (Mock - Backend integration needed)");
+      alert(`Bug submitted from ${locationData.state}! (Mock - Blockchain integration needed)`);
       
       // Reset and close
       handleClose();
@@ -151,6 +188,8 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
     setCapturedImage(null);
     setError(null);
     setIsProcessing(false);
+    setLocationData(null);
+    setIsGettingLocation(false);
     onOpenChange(false);
   };
 
@@ -165,6 +204,10 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
   useEffect(() => {
     if (open && !capturedImage && !isCameraActive) {
       startCamera();
+    }
+    // Also request location when modal opens
+    if (open && !locationData && locationPermission !== 'denied') {
+      getLocation();
     }
   }, [open]);
 
@@ -221,6 +264,39 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
               {error}
             </div>
           )}
+
+          {/* Location Status */}
+          <div className="mb-4 p-3 bg-muted rounded-md">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">
+                  {locationData 
+                    ? `Location: ${locationData.state}, ${locationData.country}`
+                    : 'Location Required'
+                  }
+                </span>
+              </div>
+              {!locationData && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={getLocation}
+                  disabled={isGettingLocation}
+                >
+                  {isGettingLocation ? 'Getting...' : 'Enable'}
+                </Button>
+              )}
+              {locationData && (
+                <span className="text-xs text-green-500">✓ Verified</span>
+              )}
+            </div>
+            {locationPermission === 'denied' && !locationData && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Location access is required to submit bugs. Please enable in your browser settings.
+              </p>
+            )}
+          </div>
 
           {/* Action Buttons */}
           <div className="space-y-3">

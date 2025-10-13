@@ -118,6 +118,8 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Add top padding for fixed header */
+    padding-top: 60px;
   }
 }
 

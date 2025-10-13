@@ -19,14 +19,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Menu, Settings, BookOpen, Trophy, User, Info, Wallet, Vote } from "lucide-react";
+import { Menu, Settings, BookOpen, Trophy, User, Info, Wallet, Vote, Shield } from "lucide-react";
 import { ScanButton } from "@/components/ScanButton";
 import { WalletButton } from "@/components/WalletButton";
+import { useAdmin } from "@/lib/useAdmin";
 
 export function BottomNav() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const router = useRouter();
+  const { isAdmin } = useAdmin();
 
   return (
     <nav 
@@ -116,6 +118,21 @@ export function BottomNav() {
                 <Info className="h-5 w-5" />
                 <span className="text-base">About</span>
               </Button>
+              
+              {/* Admin Link - Only visible to admins */}
+              {isAdmin && (
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start gap-3 h-12 text-primary"
+                  onClick={() => {
+                    router.push("/admin");
+                    setSidebarOpen(false);
+                  }}
+                >
+                  <Shield className="h-5 w-5" />
+                  <span className="text-base">Admin Dashboard</span>
+                </Button>
+              )}
               
               <div className="border-t border-border my-4" />
               

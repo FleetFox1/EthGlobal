@@ -1,4 +1,5 @@
 import { BottomNav } from "@/components/BottomNav";
+import { FaucetButton } from "@/components/FaucetButton";
 import { Button } from "@/components/ui/button";
 import { Vote, BookOpen, Trophy } from "lucide-react";
 import Link from "next/link";
@@ -16,7 +17,15 @@ export default function Home() {
             <p className="text-lg text-muted-foreground">
               Your Web3 Bug Collection App
             </p>
-            <div className="mt-8 p-8 border border-border rounded-lg bg-card">
+          </div>
+
+          {/* Faucet Section */}
+          <div className="mb-8 max-w-md mx-auto">
+            <FaucetButton />
+          </div>
+
+          <div className="text-center mb-8">
+            <div className="p-8 border border-border rounded-lg bg-card">
               <p className="text-muted-foreground">
                 Tap the <span className="font-semibold">Scan</span> button below to start
                 discovering bugs!

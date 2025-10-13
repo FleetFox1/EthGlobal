@@ -1,8 +1,13 @@
 'use client';
 
 import { WalletButton } from '@/components/WalletButton';
+import { useAdmin } from '@/lib/useAdmin';
+import { Shield } from 'lucide-react';
+import Link from 'next/link';
 
 export function Header() {
+  const { isAdmin } = useAdmin();
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
       <div className="flex items-center justify-between px-6 py-3 max-w-screen-xl mx-auto">
@@ -14,8 +19,19 @@ export function Header() {
           </span>
         </div>
 
-        {/* Right: Wallet Button */}
-        <WalletButton variant="compact" />
+        {/* Right: Admin Link + Wallet Button */}
+        <div className="flex items-center gap-3">
+          {isAdmin && (
+            <Link 
+              href="/admin" 
+              className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-accent transition-colors"
+            >
+              <Shield className="h-4 w-4" />
+              <span className="text-sm font-medium hidden sm:inline">Admin</span>
+            </Link>
+          )}
+          <WalletButton variant="compact" />
+        </div>
       </div>
     </header>
   );

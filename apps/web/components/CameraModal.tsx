@@ -13,6 +13,7 @@ import { Camera, Upload, X, RotateCw, Check, MapPin } from "lucide-react";
 import { getUserLocation, checkGeolocationPermission, type LocationData } from "@/lib/geolocation";
 import { uploadBugSubmission } from "@/lib/ipfs-client";
 import { useWallet } from "@/lib/useWallet";
+import { useBugVoting, areContractsConfigured } from "@/lib/contract-hooks";
 
 interface CameraModalProps {
   open: boolean;
@@ -35,6 +36,9 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
   
   // Get wallet info
   const { address, isConnected } = useWallet();
+  
+  // Get contract interaction hooks
+  const { submitBug: submitBugToContract } = useBugVoting();
 
   // Start camera
   const startCamera = async () => {
@@ -160,9 +164,9 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
     setIsProcessing(true);
     
     try {
-      console.log("📤 Uploading bug to IPFS...");
+      console.log("📤 Step 1: Uploading bug to IPFS...");
       
-      // Upload to IPFS
+      // Step 1: Upload to IPFS
       const ipfsResult = await uploadBugSubmission({
         imageData: capturedImage,
         location: {
@@ -174,21 +178,29 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
         discoverer: address,
       });
 
-      console.log("✅ Upload complete!");
+      console.log("✅ IPFS Upload complete!");
       console.log("Image CID:", ipfsResult.imageCid);
       console.log("Metadata CID:", ipfsResult.metadataCid);
-      console.log("Image URL:", ipfsResult.imageUrl);
-      console.log("Metadata URL:", ipfsResult.metadataUrl);
 
-      // TODO: Submit to blockchain contract
-      // Call BugVoting.submitBug(metadataCid) here
-      
-      alert(`Bug uploaded to IPFS!\nImage: ${ipfsResult.imageCid}\nMetadata: ${ipfsResult.metadataCid}\n\n(Next: Submit to blockchain)`);
+      // Step 2: Submit to blockchain (if contracts are configured)
+      if (areContractsConfigured()) {
+        console.log("📝 Step 2: Submitting to blockchain...");
+        
+        const txHash = await submitBugToContract(ipfsResult.metadataCid, 0); // 0 = common rarity
+        
+        console.log("✅ Blockchain submission complete!");
+        console.log("Transaction hash:", txHash);
+        
+        alert(`Bug submitted successfully!\n\nIPFS: ${ipfsResult.metadataCid}\nTx: ${txHash}\n\nYour bug is now pending community vote!`);
+      } else {
+        console.log("⚠️ Contracts not configured - skipping blockchain submission");
+        alert(`Bug uploaded to IPFS!\n\nMetadata: ${ipfsResult.metadataCid}\n\n(Contracts not deployed yet - blockchain submission skipped)`);
+      }
       
       // Reset and close
       handleClose();
     } catch (err: any) {
-      console.error("Submission error:", err);
+      console.error("❌ Submission error:", err);
       setError(err.message || "Failed to submit bug. Please try again.");
     } finally {
       setIsProcessing(false);

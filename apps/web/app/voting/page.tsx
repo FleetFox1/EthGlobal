@@ -81,7 +81,7 @@ const MOCK_SUBMISSIONS: BugSubmission[] = [
 export default function VotingPage() {
   const [submissions, setSubmissions] = useState<BugSubmission[]>([]);
   const [filter, setFilter] = useState<"all" | "pending" | "voted">("pending");
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false); // Changed to false for faster render
   const [isVoting, setIsVoting] = useState<number | null>(null);
   const [isClaiming, setIsClaiming] = useState<number | null>(null);
   
@@ -404,6 +404,7 @@ function VotingCard({
         <img
           src={submission.imageUrl}
           alt="Bug submission"
+          loading="lazy"
           className="w-full h-full object-cover"
         />
         

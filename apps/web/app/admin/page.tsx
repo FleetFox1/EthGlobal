@@ -26,13 +26,14 @@ export default function AdminPage() {
     activeSubmissions: "0",
     totalVotes: "0",
   });
-  const [loadingStats, setLoadingStats] = useState(true);
+  const [loadingStats, setLoadingStats] = useState(false); // Changed to false
 
   useEffect(() => {
     async function loadStats() {
       if (!isAdmin || !window.ethereum) return;
 
       try {
+        setLoadingStats(true);
         const provider = new ethers.BrowserProvider(window.ethereum);
         
         const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS!;

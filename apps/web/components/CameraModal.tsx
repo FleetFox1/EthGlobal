@@ -26,6 +26,8 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [currentStep, setCurrentStep] = useState('');
   const [locationData, setLocationData] = useState<LocationData | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
@@ -159,11 +161,16 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
     }
 
     setIsProcessing(true);
+    setUploadProgress(0);
+    setError(null);
     
     try {
+      // Step 1: Upload to IPFS (0-33%)
+      setCurrentStep('Uploading image to IPFS...');
+      setUploadProgress(10);
+      
       console.log("📤 Step 1: Uploading bug to IPFS...");
       
-      // Step 1: Upload to IPFS
       const ipfsResult = await uploadBugSubmission({
         imageData: capturedImage,
         location: {
@@ -175,12 +182,17 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
         discoverer: walletAddress,
       });
 
+      setUploadProgress(33);
       console.log("✅ IPFS Upload complete!");
       console.log("Image CID:", ipfsResult.imageCid);
       console.log("Metadata CID:", ipfsResult.metadataCid);
 
-      // Step 2: Identify the bug using AI
+      // Step 2: Identify the bug using AI (33-66%)
+      setCurrentStep('Identifying bug with AI...');
+      setUploadProgress(40);
+      
       console.log("🤖 Step 2: Identifying bug with AI...");
+      
       const identifyResponse = await fetch('/api/identify-bug', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -198,8 +210,13 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
       } else {
         console.warn("⚠️ AI identification failed:", identifyData.error);
       }
+      
+      setUploadProgress(66);
 
-      // Step 3: Save to user's collection with AI data
+      // Step 3: Save to user's collection (66-100%)
+      setCurrentStep('Saving to your collection...');
+      setUploadProgress(75);
+      
       const saveResponse = await fetch('/api/uploads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -220,6 +237,9 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
         console.log('✅ Saved to collection:', saveData.data.upload.id);
       }
 
+      setUploadProgress(100);
+      setCurrentStep('Complete!');
+
       // Show success with bug name if identified
       const successMessage = bugInfo 
         ? `🎉 Bug identified as ${bugInfo.commonName}!\n\n📸 View in your Collection page to see details and submit for voting!`
@@ -232,6 +252,8 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
     } catch (err: any) {
       console.error("❌ Submission error:", err);
       setError(err.message || "Failed to submit bug. Please try again.");
+      setUploadProgress(0);
+      setCurrentStep('');
     } finally {
       setIsProcessing(false);
     }
@@ -250,6 +272,8 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
     setCapturedImage(null);
     setError(null);
     setIsProcessing(false);
+    setUploadProgress(0);
+    setCurrentStep('');
     setLocationData(null);
     setIsGettingLocation(false);
     onOpenChange(false);
@@ -324,6 +348,40 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
           {error && (
             <div className="mb-4 p-3 bg-destructive/10 text-destructive text-sm rounded-md">
               {error}
+            </div>
+          )}
+
+          {/* Progress Bar - Show when processing */}
+          {isProcessing && (
+            <div className="mb-4 p-4 bg-muted rounded-lg space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">{currentStep}</span>
+                <span className="text-muted-foreground">{uploadProgress}%</span>
+              </div>
+              
+              {/* Progress Bar */}
+              <div className="w-full bg-background rounded-full h-2.5 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-green-500 to-blue-500 transition-all duration-500 ease-out"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+              
+              {/* Progress Steps */}
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className={`flex items-center gap-1 ${uploadProgress >= 40 ? 'text-green-500' : 'text-muted-foreground'}`}>
+                  {uploadProgress >= 40 ? <Check className="h-3 w-3" /> : <div className="h-3 w-3 rounded-full border-2" />}
+                  <span>IPFS Upload</span>
+                </div>
+                <div className={`flex items-center gap-1 ${uploadProgress >= 70 ? 'text-green-500' : 'text-muted-foreground'}`}>
+                  {uploadProgress >= 70 ? <Check className="h-3 w-3" /> : <div className="h-3 w-3 rounded-full border-2" />}
+                  <span>AI Identify</span>
+                </div>
+                <div className={`flex items-center gap-1 ${uploadProgress >= 100 ? 'text-green-500' : 'text-muted-foreground'}`}>
+                  {uploadProgress >= 100 ? <Check className="h-3 w-3" /> : <div className="h-3 w-3 rounded-full border-2" />}
+                  <span>Save</span>
+                </div>
+              </div>
             </div>
           )}
 

@@ -21,11 +21,13 @@ export default function ProfilePage() {
   const { getBalance: getNFTBalance } = useBugNFT();
   
   const [onChainStats, setOnChainStats] = useState<OnChainStats | null>(null);
-  const [isLoadingStats, setIsLoadingStats] = useState(true);
+  const [isLoadingStats, setIsLoadingStats] = useState(false); // Changed to false for faster render
 
   // Load blockchain stats
   useEffect(() => {
-    loadOnChainStats();
+    if (isConnected && address) {
+      loadOnChainStats();
+    }
   }, [isConnected, address]);
 
   const loadOnChainStats = async () => {
@@ -70,12 +72,21 @@ export default function ProfilePage() {
     }
   };
 
-  if (userLoading || isLoadingStats) {
+  if (userLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center pb-24">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
-          <p className="text-muted-foreground">Loading profile...</p>
+      <div className="min-h-screen bg-background pb-24">
+        <div className="max-w-screen-xl mx-auto px-4 py-8">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="h-10 w-10 bg-muted rounded animate-pulse" />
+            <div className="h-8 w-32 bg-muted rounded animate-pulse" />
+          </div>
+          <div className="grid gap-6">
+            <div className="h-32 bg-muted rounded-lg animate-pulse" />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="h-24 bg-muted rounded-lg animate-pulse" />
+              <div className="h-24 bg-muted rounded-lg animate-pulse" />
+            </div>
+          </div>
         </div>
       </div>
     );

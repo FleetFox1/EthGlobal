@@ -2,6 +2,13 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { 
   ArrowLeft, 
   Loader2, 
@@ -13,7 +20,8 @@ import {
   AlertTriangle,
   Shield,
   Sparkles,
-  Info
+  Info,
+  X
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -66,14 +74,14 @@ interface UserUpload {
 export default function CollectionPage() {
   const { walletAddress, isAuthenticated } = useUser();
   const [uploads, setUploads] = useState<UserUpload[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Changed to false for faster initial render
   const [submitting, setSubmitting] = useState<string | null>(null);
+  const [selectedBug, setSelectedBug] = useState<UserUpload | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated && walletAddress) {
       loadUploads();
-    } else {
-      setLoading(false);
     }
   }, [isAuthenticated, walletAddress]);
 
@@ -82,7 +90,9 @@ export default function CollectionPage() {
 
     try {
       setLoading(true);
-      const response = await fetch(`/api/uploads?address=${walletAddress}`);
+      const response = await fetch(`/api/uploads?address=${walletAddress}`, {
+        cache: 'no-store', // Always get fresh data
+      });
       const data = await response.json();
 
       if (data.success) {
@@ -160,8 +170,31 @@ export default function CollectionPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center pb-24">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-background pb-24">
+        <div className="max-w-screen-xl mx-auto px-4 py-8">
+          {/* Header Skeleton */}
+          <div className="flex items-center gap-4 mb-8">
+            <div className="h-10 w-10 bg-muted rounded animate-pulse" />
+            <div className="space-y-2">
+              <div className="h-8 w-48 bg-muted rounded animate-pulse" />
+              <div className="h-4 w-32 bg-muted rounded animate-pulse" />
+            </div>
+          </div>
+          
+          {/* Grid Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="border rounded-lg overflow-hidden">
+                <div className="aspect-square bg-muted animate-pulse" />
+                <div className="p-4 space-y-3">
+                  <div className="h-6 bg-muted rounded animate-pulse" />
+                  <div className="h-4 bg-muted rounded w-3/4 animate-pulse" />
+                  <div className="h-4 bg-muted rounded w-1/2 animate-pulse" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -204,13 +237,25 @@ export default function CollectionPage() {
         {/* Grid of uploads */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {uploads.map((upload) => (
-            <Card key={upload.id} className="overflow-hidden">
+            <Card 
+              key={upload.id} 
+              className="overflow-hidden cursor-pointer hover:shadow-xl transition-shadow"
+              onClick={() => {
+                setSelectedBug(upload);
+                setIsModalOpen(true);
+              }}
+            >
               {/* Image */}
               <div className="relative aspect-square bg-muted">
                 <img
                   src={upload.imageUrl}
                   alt="Bug photo"
+                  loading="lazy"
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Fallback if image fails to load
+                    (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23e5e7eb" width="100" height="100"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af"%3EImage%3C/text%3E%3C/svg%3E';
+                  }}
                 />
                 {upload.submittedToBlockchain && (
                   <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs flex items-center gap-1">
@@ -310,7 +355,10 @@ export default function CollectionPage() {
                 {/* Action Button */}
                 {!upload.submittedToBlockchain ? (
                   <Button
-                    onClick={() => submitToBlockchain(upload)}
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent modal from opening
+                      submitToBlockchain(upload);
+                    }}
                     disabled={submitting === upload.id}
                     className="w-full"
                   >
@@ -349,6 +397,211 @@ export default function CollectionPage() {
           ))}
         </div>
       </div>
+
+      {/* Bug Details Modal */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          {selectedBug && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-2xl">
+                  {selectedBug.bugInfo?.commonName || "Bug Details"}
+                </DialogTitle>
+                <DialogDescription>
+                  {selectedBug.bugInfo?.scientificName && (
+                    <span className="italic">{selectedBug.bugInfo.scientificName}</span>
+                  )}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-6">
+                {/* Image */}
+                <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
+                  <img
+                    src={selectedBug.imageUrl}
+                    alt="Bug"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+
+                {/* AI Identification Section */}
+                {selectedBug.bugInfo && (
+                  <div className="space-y-4">
+                    <h3 className="font-semibold text-lg flex items-center gap-2">
+                      <Sparkles className="h-5 w-5 text-blue-500" />
+                      AI Identification
+                    </h3>
+                    
+                    {/* Basic Info */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Family</p>
+                        <p className="font-medium">{selectedBug.bugInfo.family}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Order</p>
+                        <p className="font-medium">{selectedBug.bugInfo.order}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Size</p>
+                        <p className="font-medium">{selectedBug.bugInfo.size}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Lifespan</p>
+                        <p className="font-medium">{selectedBug.bugInfo.lifespan}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Diet</p>
+                        <p className="font-medium">{selectedBug.bugInfo.diet}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Rarity</p>
+                        <p className="font-medium capitalize">{selectedBug.bugInfo.rarity}</p>
+                      </div>
+                    </div>
+
+                    {/* Characteristics */}
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-2">Characteristics</p>
+                      <div className="grid grid-cols-5 gap-2">
+                        <div className="text-center p-2 bg-muted rounded">
+                          <p className="text-xs text-muted-foreground">Venom</p>
+                          <p className="font-bold">{selectedBug.bugInfo.characteristics.venom}/10</p>
+                        </div>
+                        <div className="text-center p-2 bg-muted rounded">
+                          <p className="text-xs text-muted-foreground">Bite</p>
+                          <p className="font-bold">{selectedBug.bugInfo.characteristics.biteForce}/10</p>
+                        </div>
+                        <div className="text-center p-2 bg-muted rounded">
+                          <p className="text-xs text-muted-foreground">Disease</p>
+                          <p className="font-bold">{selectedBug.bugInfo.characteristics.disease}/10</p>
+                        </div>
+                        <div className="text-center p-2 bg-muted rounded">
+                          <p className="text-xs text-muted-foreground">Aggression</p>
+                          <p className="font-bold">{selectedBug.bugInfo.characteristics.aggression}/10</p>
+                        </div>
+                        <div className="text-center p-2 bg-muted rounded">
+                          <p className="text-xs text-muted-foreground">Speed</p>
+                          <p className="font-bold">{selectedBug.bugInfo.characteristics.speed}/10</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Habitat & Distribution */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Habitat</p>
+                        <p className="font-medium">{selectedBug.bugInfo.habitat}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Distribution</p>
+                        <p className="font-medium">{selectedBug.bugInfo.distribution}</p>
+                      </div>
+                    </div>
+
+                    {/* Conservation Status */}
+                    <div>
+                      <p className="text-sm text-muted-foreground">Conservation Status</p>
+                      <p className="font-medium">{selectedBug.bugInfo.conservationStatus}</p>
+                    </div>
+
+                    {/* Danger Level */}
+                    {selectedBug.bugInfo.isDangerous && (
+                      <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-2">
+                        <AlertTriangle className="h-5 w-5 text-red-500" />
+                        <div>
+                          <p className="font-semibold text-red-500">Potentially Dangerous</p>
+                          <p className="text-sm text-muted-foreground">Danger Level: {selectedBug.bugInfo.dangerLevel}/10</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Interesting Facts */}
+                    {selectedBug.bugInfo.interestingFacts && selectedBug.bugInfo.interestingFacts.length > 0 && (
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-2">Interesting Facts</p>
+                        <ul className="list-disc list-inside space-y-1">
+                          {selectedBug.bugInfo.interestingFacts.map((fact, index) => (
+                            <li key={index} className="text-sm">{fact}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* AI Confidence */}
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Shield className="h-4 w-4" />
+                      <span>AI Confidence: {Math.round(selectedBug.bugInfo.confidence * 100)}%</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Location & Time */}
+                <div className="space-y-4 pt-4 border-t">
+                  <h3 className="font-semibold text-lg flex items-center gap-2">
+                    <MapPin className="h-5 w-5 text-green-500" />
+                    Discovery Information
+                  </h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Location</p>
+                      <p className="font-medium">{selectedBug.location.state}, {selectedBug.location.country}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Date</p>
+                      <p className="font-medium">{new Date(selectedBug.timestamp).toLocaleDateString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Status</p>
+                      {selectedBug.submittedToBlockchain ? (
+                        <p className="font-medium text-green-500 flex items-center gap-1">
+                          <CheckCircle className="h-4 w-4" />
+                          On Blockchain
+                        </p>
+                      ) : (
+                        <p className="font-medium text-muted-foreground">Not Submitted</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* IPFS Links */}
+                <div className="space-y-2 pt-4 border-t">
+                  <h3 className="font-semibold text-sm text-muted-foreground">IPFS Data</h3>
+                  <div className="flex flex-wrap gap-2">
+                    <a
+                      href={selectedBug.imageUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-500 hover:underline flex items-center gap-1"
+                    >
+                      View Image <ExternalLink className="h-3 w-3" />
+                    </a>
+                    <a
+                      href={selectedBug.metadataUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-500 hover:underline flex items-center gap-1"
+                    >
+                      View Metadata <ExternalLink className="h-3 w-3" />
+                    </a>
+                    {selectedBug.transactionHash && (
+                      <a
+                        href={`https://sepolia.etherscan.io/tx/${selectedBug.transactionHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-500 hover:underline flex items-center gap-1"
+                      >
+                        View Transaction <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

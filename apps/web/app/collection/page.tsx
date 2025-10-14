@@ -2,7 +2,19 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Loader2, Upload, MapPin, Clock, ExternalLink, CheckCircle } from "lucide-react";
+import { 
+  ArrowLeft, 
+  Loader2, 
+  Upload, 
+  MapPin, 
+  Clock, 
+  ExternalLink, 
+  CheckCircle,
+  AlertTriangle,
+  Shield,
+  Sparkles,
+  Info
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useUser } from "@/lib/useUser";
@@ -21,6 +33,30 @@ interface UserUpload {
     country: string;
     latitude: number;
     longitude: number;
+  };
+  bugInfo?: {
+    commonName: string;
+    scientificName: string;
+    family: string;
+    order: string;
+    confidence: number;
+    distribution: string;
+    habitat: string;
+    diet: string;
+    size: string;
+    isDangerous: boolean;
+    dangerLevel: number;
+    conservationStatus: string;
+    interestingFacts: string[];
+    characteristics: {
+      venom: number;
+      biteForce: number;
+      disease: number;
+      aggression: number;
+      speed: number;
+    };
+    lifespan: string;
+    rarity: string;
   };
   submittedToBlockchain: boolean;
   transactionHash?: string;
@@ -182,10 +218,63 @@ export default function CollectionPage() {
                     On-Chain
                   </div>
                 )}
+                {upload.bugInfo && upload.bugInfo.confidence > 0.7 && (
+                  <div className="absolute top-2 left-2 bg-blue-500 text-white px-2 py-1 rounded-full text-xs flex items-center gap-1">
+                    <Sparkles className="h-3 w-3" />
+                    AI ID
+                  </div>
+                )}
               </div>
 
               {/* Info */}
               <div className="p-4 space-y-3">
+                {/* Bug Identification */}
+                {upload.bugInfo && (
+                  <div className="border-b pb-3 space-y-1">
+                    <h3 className="font-bold text-lg">{upload.bugInfo.commonName}</h3>
+                    <p className="text-sm italic text-muted-foreground">
+                      {upload.bugInfo.scientificName}
+                    </p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {/* Rarity Badge */}
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        upload.bugInfo.rarity === 'very rare' ? 'bg-purple-100 text-purple-700' :
+                        upload.bugInfo.rarity === 'rare' ? 'bg-yellow-100 text-yellow-700' :
+                        upload.bugInfo.rarity === 'uncommon' ? 'bg-blue-100 text-blue-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {upload.bugInfo.rarity}
+                      </span>
+                      
+                      {/* Danger Badge */}
+                      {upload.bugInfo.isDangerous && (
+                        <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-700 flex items-center gap-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          Caution
+                        </span>
+                      )}
+                      
+                      {/* Size */}
+                      <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">
+                        {upload.bugInfo.size}
+                      </span>
+                    </div>
+                    
+                    {/* Quick Facts */}
+                    <div className="text-xs text-muted-foreground space-y-1 mt-2">
+                      <div><strong>Family:</strong> {upload.bugInfo.family}</div>
+                      <div><strong>Diet:</strong> {upload.bugInfo.diet}</div>
+                      <div><strong>Habitat:</strong> {upload.bugInfo.habitat}</div>
+                    </div>
+                    
+                    {/* Confidence */}
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
+                      <Shield className="h-3 w-3" />
+                      <span>{Math.round(upload.bugInfo.confidence * 100)}% confidence</span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Location */}
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <MapPin className="h-4 w-4" />

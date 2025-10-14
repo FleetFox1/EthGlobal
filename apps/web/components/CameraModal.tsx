@@ -179,7 +179,27 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
       console.log("Image CID:", ipfsResult.imageCid);
       console.log("Metadata CID:", ipfsResult.metadataCid);
 
-      // Save to user's collection
+      // Step 2: Identify the bug using AI
+      console.log("🤖 Step 2: Identifying bug with AI...");
+      const identifyResponse = await fetch('/api/identify-bug', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageUrl: ipfsResult.imageUrl,
+        }),
+      });
+
+      const identifyData = await identifyResponse.json();
+      let bugInfo = null;
+
+      if (identifyData.success) {
+        bugInfo = identifyData.bug;
+        console.log("✅ Bug identified:", bugInfo.commonName, "-", bugInfo.scientificName);
+      } else {
+        console.warn("⚠️ AI identification failed:", identifyData.error);
+      }
+
+      // Step 3: Save to user's collection with AI data
       const saveResponse = await fetch('/api/uploads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -190,6 +210,7 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
           metadataUrl: ipfsResult.metadataUrl,
           discoverer: walletAddress,
           location: locationData,
+          bugInfo: bugInfo, // Include AI identification data
         }),
       });
 
@@ -199,11 +220,12 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
         console.log('✅ Saved to collection:', saveData.data.upload.id);
       }
 
-      // Show success with IPFS links
-      const imageUrl = `https://gateway.lighthouse.storage/ipfs/${ipfsResult.imageCid}`;
-      const metadataUrl = `https://gateway.lighthouse.storage/ipfs/${ipfsResult.metadataCid}`;
+      // Show success with bug name if identified
+      const successMessage = bugInfo 
+        ? `🎉 Bug identified as ${bugInfo.commonName}!\n\n📸 View in your Collection page to see details and submit for voting!`
+        : `🎉 Bug uploaded to IPFS and saved to your collection!\n\n📸 View in your Collection page to submit for voting!`;
       
-      alert(`🎉 Bug uploaded to IPFS and saved to your collection!\n\n📸 View in your Collection page to submit for voting!`);
+      alert(successMessage);
       
       // Reset and close
       handleClose();

@@ -16,6 +16,30 @@ const userUploads = new Map<string, Array<{
     latitude: number;
     longitude: number;
   };
+  bugInfo?: {
+    commonName: string;
+    scientificName: string;
+    family: string;
+    order: string;
+    confidence: number;
+    distribution: string;
+    habitat: string;
+    diet: string;
+    size: string;
+    isDangerous: boolean;
+    dangerLevel: number;
+    conservationStatus: string;
+    interestingFacts: string[];
+    characteristics: {
+      venom: number;
+      biteForce: number;
+      disease: number;
+      aggression: number;
+      speed: number;
+    };
+    lifespan: string;
+    rarity: string;
+  };
   submittedToBlockchain: boolean;
   transactionHash?: string;
   submissionId?: number;
@@ -33,7 +57,8 @@ export async function POST(request: NextRequest) {
       imageUrl, 
       metadataUrl, 
       discoverer, 
-      location 
+      location,
+      bugInfo // AI identification data
     } = body;
 
     if (!imageCid || !metadataCid || !discoverer) {
@@ -56,6 +81,7 @@ export async function POST(request: NextRequest) {
       discoverer: discoverer.toLowerCase(),
       timestamp: Date.now(),
       location,
+      bugInfo, // Include AI data if available
       submittedToBlockchain: false,
     };
 

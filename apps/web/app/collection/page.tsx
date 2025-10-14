@@ -69,6 +69,13 @@ interface UserUpload {
   submittedToBlockchain: boolean;
   transactionHash?: string;
   submissionId?: number;
+  blockchainStatus?: {
+    resolved: boolean;
+    approved: boolean;
+    nftClaimed: boolean;
+    votesFor: number;
+    votesAgainst: number;
+  };
 }
 
 export default function CollectionPage() {
@@ -78,6 +85,7 @@ export default function CollectionPage() {
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [selectedBug, setSelectedBug] = useState<UserUpload | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [claiming, setClaiming] = useState<string | null>(null);
 
   useEffect(() => {
     if (isAuthenticated && walletAddress) {
@@ -96,12 +104,50 @@ export default function CollectionPage() {
       const data = await response.json();
 
       if (data.success) {
-        setUploads(data.data.uploads);
+        const uploadsWithStatus = await Promise.all(
+          data.data.uploads.map(async (upload: UserUpload) => {
+            if (upload.submittedToBlockchain && upload.submissionId) {
+              const status = await getSubmissionStatus(upload.submissionId);
+              return { ...upload, blockchainStatus: status };
+            }
+            return upload;
+          })
+        );
+        setUploads(uploadsWithStatus);
       }
     } catch (error) {
       console.error('Failed to load uploads:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getSubmissionStatus = async (submissionId: number) => {
+    try {
+      if (!window.ethereum) return null;
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const bugVotingAddress = process.env.NEXT_PUBLIC_BUG_VOTING_ADDRESS;
+      
+      if (!bugVotingAddress) return null;
+
+      const bugVotingABI = [
+        "function getSubmission(uint256 submissionId) external view returns (address submitter, string memory ipfsHash, uint256 createdAt, uint256 votesFor, uint256 votesAgainst, bool resolved, bool approved, bool nftClaimed, uint256 nftTokenId)",
+      ];
+
+      const bugVoting = new ethers.Contract(bugVotingAddress, bugVotingABI, provider);
+      const result = await bugVoting.getSubmission(submissionId);
+
+      return {
+        resolved: result[5],
+        approved: result[6],
+        nftClaimed: result[7],
+        votesFor: Number(result[3]),
+        votesAgainst: Number(result[4]),
+      };
+    } catch (error) {
+      console.error('Failed to get submission status:', error);
+      return null;
     }
   };
 
@@ -121,6 +167,7 @@ export default function CollectionPage() {
 
       const bugVotingABI = [
         "function submitBug(string memory metadataCid, uint8 rarity) external returns (uint256)",
+        "event SubmissionCreated(uint256 indexed submissionId, address indexed submitter, string ipfsHash)",
       ];
 
       const bugVoting = new ethers.Contract(bugVotingAddress, bugVotingABI, signer);
@@ -131,6 +178,11 @@ export default function CollectionPage() {
       console.log('⏳ Waiting for confirmation...');
       const receipt = await tx.wait();
 
+      // Extract submission ID from event logs
+      const submissionId = receipt.logs.length > 0 ? 
+        parseInt(receipt.logs[0].topics[1], 16) : 
+        undefined;
+
       // Update upload status
       await fetch('/api/uploads', {
         method: 'PATCH',
@@ -138,6 +190,7 @@ export default function CollectionPage() {
         body: JSON.stringify({
           uploadId: upload.id,
           transactionHash: receipt.hash,
+          submissionId: submissionId,
         }),
       });
 
@@ -151,6 +204,46 @@ export default function CollectionPage() {
       alert(`Failed to submit: ${error.message}`);
     } finally {
       setSubmitting(null);
+    }
+  };
+
+  const claimNFT = async (upload: UserUpload) => {
+    if (!window.ethereum || !walletAddress || !upload.submissionId) return;
+
+    setClaiming(upload.id);
+
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      const bugVotingAddress = process.env.NEXT_PUBLIC_BUG_VOTING_ADDRESS;
+      if (!bugVotingAddress) {
+        throw new Error('Contract address not configured');
+      }
+
+      const bugVotingABI = [
+        "function claimNFT(uint256 submissionId) external",
+        "event NFTClaimed(uint256 indexed submissionId, address indexed claimer, uint256 nftTokenId)",
+      ];
+
+      const bugVoting = new ethers.Contract(bugVotingAddress, bugVotingABI, signer);
+
+      console.log('🎁 Claiming NFT...');
+      const tx = await bugVoting.claimNFT(upload.submissionId);
+      
+      console.log('⏳ Waiting for confirmation...');
+      const receipt = await tx.wait();
+
+      console.log('✅ NFT Claimed!', receipt.hash);
+      alert(`🎉 Congratulations! Your Bug NFT has been minted!\n\nTransaction: ${receipt.hash}`);
+
+      // Reload uploads to update status
+      await loadUploads();
+    } catch (error: any) {
+      console.error('Failed to claim NFT:', error);
+      alert(`Failed to claim NFT: ${error.message}`);
+    } finally {
+      setClaiming(null);
     }
   };
 
@@ -376,10 +469,73 @@ export default function CollectionPage() {
                   </Button>
                 ) : (
                   <div className="space-y-2">
-                    <Button variant="outline" className="w-full" disabled>
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Submitted
-                    </Button>
+                    {/* Show voting status */}
+                    {upload.blockchainStatus && !upload.blockchainStatus.resolved && (
+                      <div className="text-sm text-muted-foreground bg-blue-50 p-3 rounded-md">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Info className="h-4 w-4" />
+                          <span className="font-semibold">In Voting</span>
+                        </div>
+                        <div className="text-xs">
+                          Votes For: {upload.blockchainStatus.votesFor} / 5<br />
+                          Votes Against: {upload.blockchainStatus.votesAgainst}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Show approved status with claim button */}
+                    {upload.blockchainStatus?.resolved && 
+                     upload.blockchainStatus?.approved && 
+                     !upload.blockchainStatus?.nftClaimed && (
+                      <Button
+                        onClick={() => claimNFT(upload)}
+                        disabled={claiming === upload.id}
+                        className="w-full bg-green-600 hover:bg-green-700"
+                      >
+                        {claiming === upload.id ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Claiming...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="h-4 w-4 mr-2" />
+                            Claim Your NFT
+                          </>
+                        )}
+                      </Button>
+                    )}
+                    
+                    {/* Show NFT claimed status */}
+                    {upload.blockchainStatus?.nftClaimed && (
+                      <Button variant="outline" className="w-full" disabled>
+                        <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
+                        NFT Claimed
+                      </Button>
+                    )}
+                    
+                    {/* Show rejected status */}
+                    {upload.blockchainStatus?.resolved && 
+                     !upload.blockchainStatus?.approved && (
+                      <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
+                        <div className="flex items-center gap-2">
+                          <AlertTriangle className="h-4 w-4" />
+                          <span className="font-semibold">Not Approved</span>
+                        </div>
+                        <div className="text-xs mt-1">
+                          This submission didn't receive enough votes
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* If just submitted (no status yet) */}
+                    {!upload.blockchainStatus && (
+                      <Button variant="outline" className="w-full" disabled>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Submitted
+                      </Button>
+                    )}
+                    
                     {upload.transactionHash && (
                       <a
                         href={`https://sepolia.etherscan.io/tx/${upload.transactionHash}`}

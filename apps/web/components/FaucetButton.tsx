@@ -1,16 +1,59 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/lib/useUser";
-import { Loader2, Coins, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, Coins, CheckCircle, XCircle, Lock } from "lucide-react";
 import { ethers } from "ethers";
+import { UnlockFaucetModal } from "./UnlockFaucetModal";
 
 export function FaucetButton() {
   const { walletAddress, isAuthenticated } = useUser();
   const [claiming, setClaiming] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [hasUnlocked, setHasUnlocked] = useState(false);
+  const [checkingUnlock, setCheckingUnlock] = useState(true);
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
+
+  const checkUnlockStatus = async () => {
+    if (!walletAddress || !isAuthenticated) {
+      setCheckingUnlock(false);
+      return;
+    }
+
+    try {
+      if (!window.ethereum) return;
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS;
+      
+      if (!bugTokenAddress) return;
+
+      const bugTokenABI = [
+        "function hasUnlocked(address) external view returns (bool)",
+      ];
+
+      const bugToken = new ethers.Contract(bugTokenAddress, bugTokenABI, provider);
+      const unlocked = await bugToken.hasUnlocked(walletAddress);
+      
+      setHasUnlocked(unlocked);
+    } catch (error) {
+      console.error("Failed to check unlock status:", error);
+    } finally {
+      setCheckingUnlock(false);
+    }
+  };
+
+  useEffect(() => {
+    checkUnlockStatus();
+  }, [walletAddress, isAuthenticated]);
+
+  const handleUnlockSuccess = () => {
+    setShowUnlockModal(false);
+    setHasUnlocked(true);
+    setMessage("🎉 Faucet unlocked! You received 100 BUG tokens!");
+  };
 
   const claimFaucet = async () => {
     if (!walletAddress || !isAuthenticated) {
@@ -23,18 +66,14 @@ export function FaucetButton() {
     setError("");
 
     try {
-      // Get provider from window.ethereum (MetaMask/Privy)
       if (!window.ethereum) {
         throw new Error("No wallet found");
       }
 
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-
-      // BugToken contract address (Sepolia)
       const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS!;
       
-      // BugToken ABI (just the claimFaucet function)
       const bugTokenABI = [
         "function claimFaucet() external",
         "function canClaimFaucet(address account) external view returns (bool)",
@@ -43,17 +82,14 @@ export function FaucetButton() {
 
       const bugToken = new ethers.Contract(bugTokenAddress, bugTokenABI, signer);
 
-      // Claim from faucet (contract will revert if cooldown not passed)
       console.log("🎰 Claiming 100 BUG tokens...");
       
-      // Add a timeout to prevent hanging forever
       const txPromise = bugToken.claimFaucet();
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error("Transaction timeout")), 30000)
       );
       
       const tx = await Promise.race([txPromise, timeoutPromise]);
-      
       setMessage("⏳ Transaction submitted... waiting for confirmation");
       
       const receipt = await tx.wait();
@@ -61,23 +97,20 @@ export function FaucetButton() {
       console.log("✅ Faucet claimed!", receipt);
       setMessage("🎉 Successfully claimed 100 BUG tokens!");
       setError("");
-
     } catch (err: any) {
       console.error("❌ Faucet claim failed:", err);
       
-      // Parse contract revert reasons
       if (err.reason) {
         setError(err.reason);
-      } else if (err.message.includes("Cooldown period not passed")) {
+      } else if (err.message && err.message.includes("Cooldown period not passed")) {
         setError("⏰ Please wait 24 hours between claims");
-      } else if (err.message.includes("wait")) {
+      } else if (err.message && err.message.includes("wait")) {
         setError(err.message);
-      } else if (err.code === "ACTION_REJECTED" || err.message.includes("user rejected")) {
+      } else if (err.code === "ACTION_REJECTED" || (err.message && err.message.includes("user rejected"))) {
         setError("❌ Transaction cancelled");
-      } else if (err.message.includes("insufficient funds")) {
+      } else if (err.message && err.message.includes("insufficient funds")) {
         setError("❌ Insufficient ETH for gas fees");
       } else {
-        // Show a more user-friendly message
         setError(err.shortMessage || err.message || "Failed to claim faucet");
       }
       setMessage("");
@@ -94,6 +127,53 @@ export function FaucetButton() {
           Connect your wallet to claim free BUG tokens
         </p>
       </div>
+    );
+  }
+
+  if (checkingUnlock) {
+    return (
+      <div className="bg-card border border-border rounded-lg p-6 text-center">
+        <Loader2 className="h-8 w-8 mx-auto mb-3 animate-spin text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">Checking faucet status...</p>
+      </div>
+    );
+  }
+
+  if (!hasUnlocked) {
+    return (
+      <>
+        <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/50 rounded-lg p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Lock className="h-8 w-8 text-purple-500" />
+            <div>
+              <h3 className="text-lg font-bold">Unlock BugDex Voting</h3>
+              <p className="text-sm text-muted-foreground">One-time $1 payment</p>
+            </div>
+          </div>
+
+          <Button 
+            onClick={() => setShowUnlockModal(true)}
+            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+            size="lg"
+          >
+            <Lock className="h-4 w-4 mr-2" />
+            Unlock for $1
+          </Button>
+
+          <div className="mt-4 space-y-2 text-xs text-muted-foreground">
+            <p>✨ Get 100 BUG tokens immediately</p>
+            <p>♾️ Unlimited free claims (1 per day)</p>
+            <p>🗳️ Vote on community submissions</p>
+          </div>
+        </div>
+
+        <UnlockFaucetModal
+          open={showUnlockModal}
+          onClose={() => setShowUnlockModal(false)}
+          onSuccess={handleUnlockSuccess}
+          walletAddress={walletAddress!}
+        />
+      </>
     );
   }
 

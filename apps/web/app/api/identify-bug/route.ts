@@ -18,6 +18,29 @@ export async function POST(request: NextRequest) {
 
     console.log('🔍 Identifying bug from image:', imageUrl);
 
+    // Check if OpenAI API key is configured
+    if (!process.env.OPENAI_API_KEY) {
+      console.error('❌ OPENAI_API_KEY is not configured');
+      return NextResponse.json(
+        { error: 'OpenAI API key is not configured' },
+        { status: 500 }
+      );
+    }
+
+    // Fetch the image and convert to base64 for better compatibility with OpenAI
+    console.log('📥 Fetching image from IPFS...');
+    const imageResponse = await fetch(imageUrl);
+    if (!imageResponse.ok) {
+      throw new Error(`Failed to fetch image: ${imageResponse.status}`);
+    }
+    
+    const imageBuffer = await imageResponse.arrayBuffer();
+    const base64Image = Buffer.from(imageBuffer).toString('base64');
+    const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg';
+    const dataUrl = `data:${mimeType};base64,${base64Image}`;
+    
+    console.log('✅ Image converted to base64, size:', base64Image.length, 'chars');
+
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
@@ -63,7 +86,7 @@ Rate characteristics on a scale of 0-10. If you cannot identify the insect with 
             {
               type: 'image_url',
               image_url: {
-                url: imageUrl,
+                url: dataUrl,
                 detail: 'high',
               },
             },
@@ -89,9 +112,19 @@ Rate characteristics on a scale of 0-10. If you cannot identify the insect with 
         .replace(/```json\n?/g, '')
         .replace(/```\n?/g, '')
         .trim();
-      bugData = JSON.parse(cleanContent);
+      
+      // Try to extract JSON from the content if there's text before/after
+      const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        bugData = JSON.parse(jsonMatch[0]);
+      } else {
+        bugData = JSON.parse(cleanContent);
+      }
+      
+      console.log('✅ Parsed bug data:', bugData);
     } catch (parseError) {
       console.error('❌ Failed to parse OpenAI response:', content);
+      console.error('Parse error:', parseError);
       throw new Error('Failed to parse identification result');
     }
 

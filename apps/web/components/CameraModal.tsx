@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,6 +22,7 @@ interface CameraModalProps {
 }
 
 export function CameraModal({ open, onOpenChange }: CameraModalProps) {
+  const router = useRouter();
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
@@ -192,23 +194,48 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
       setUploadProgress(40);
       
       console.log("🤖 Step 2: Identifying bug with AI...");
+      console.log("Image URL for AI:", ipfsResult.imageUrl);
       
-      const identifyResponse = await fetch('/api/identify-bug', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          imageUrl: ipfsResult.imageUrl,
-        }),
-      });
-
-      const identifyData = await identifyResponse.json();
       let bugInfo = null;
+      
+      try {
+        // Add timeout to prevent hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+        
+        const identifyResponse = await fetch('/api/identify-bug', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            imageUrl: ipfsResult.imageUrl,
+          }),
+          signal: controller.signal,
+        });
 
-      if (identifyData.success) {
-        bugInfo = identifyData.bug;
-        console.log("✅ Bug identified:", bugInfo.commonName, "-", bugInfo.scientificName);
-      } else {
-        console.warn("⚠️ AI identification failed:", identifyData.error);
+        clearTimeout(timeoutId);
+
+        if (!identifyResponse.ok) {
+          console.warn("⚠️ AI API returned error status:", identifyResponse.status);
+          throw new Error(`AI API error: ${identifyResponse.status}`);
+        }
+
+        const identifyData = await identifyResponse.json();
+        console.log("AI Response:", identifyData);
+
+        if (identifyData.success && identifyData.bug) {
+          bugInfo = identifyData.bug;
+          console.log("✅ Bug identified:", bugInfo.commonName, "-", bugInfo.scientificName);
+        } else {
+          console.warn("⚠️ AI identification failed:", identifyData.error || identifyData.details || "Unknown error");
+        }
+      } catch (aiError: any) {
+        if (aiError.name === 'AbortError') {
+          console.warn("⚠️ AI identification timed out after 30 seconds");
+        } else {
+          console.warn("⚠️ AI identification error:", aiError.message);
+        }
+        // Continue without AI identification
+        bugInfo = null;
       }
       
       setUploadProgress(66);
@@ -242,13 +269,18 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
 
       // Show success with bug name if identified
       const successMessage = bugInfo 
-        ? `🎉 Bug identified as ${bugInfo.commonName}!\n\n📸 View in your Collection page to see details and submit for voting!`
-        : `🎉 Bug uploaded to IPFS and saved to your collection!\n\n📸 View in your Collection page to submit for voting!`;
+        ? `🎉 Bug identified as ${bugInfo.commonName}!\n\nView it in your collection!`
+        : `🎉 Bug uploaded successfully!\n\nView it in your collection!`;
       
       alert(successMessage);
       
-      // Reset and close
+      // Reset and close modal first
       handleClose();
+      
+      // Redirect to collection page after a short delay to ensure modal is closed
+      setTimeout(() => {
+        router.push('/collection');
+      }, 300);
     } catch (err: any) {
       console.error("❌ Submission error:", err);
       setError(err.message || "Failed to submit bug. Please try again.");

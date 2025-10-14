@@ -364,17 +364,26 @@ pnpm add framer-motion
 
 ## 📝 Next Steps
 
-### Immediate Actions:
-1. **Get OpenAI API key** → Add to `.env.local`
-2. **Create `/api/identify-bug/route.ts`**
-3. **Test with existing bug photos in collection**
-4. **Install Recharts:** `pnpm add recharts`
-5. **Create `BugDetailsModal` component**
+### ✅ Completed (Backend/AI):
+1. ✅ OpenAI API key added to `.env.local`
+2. ✅ `/api/identify-bug/route.ts` created and working
+3. ✅ Tested with bug photos - 90-95% confidence scores
+4. ✅ AI data integrated into uploads API and collection page
 
-### Environment Variables Needed:
-```env
-OPENAI_API_KEY=sk-...
-```
+### 🎨 Frontend Designer Tasks:
+The AI backend is complete! Now the frontend designer can create beautiful visualizations:
+
+1. **Install Recharts:** `pnpm add recharts`
+2. **Create visualization components:**
+   - ThreatRadarChart (venom, aggression, speed, etc.)
+   - SizeComparison component
+   - HabitatMap visualization
+   - ConservationStatusBadge
+3. **Build BugDetailsModal** - Full-screen view with all infographics
+4. **Design interesting facts carousel**
+5. **Create educational cards** for diet, habitat, lifespan
+
+**All the data is already available in `upload.bugInfo`** - just needs beautiful UI!
 
 ---
 

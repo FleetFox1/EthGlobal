@@ -1,9 +1,10 @@
 import { ethers } from "ethers";
 
 // Contract addresses from environment
-const BUG_TOKEN_ADDRESS = process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS!;
+// Use V2 contracts if available, fallback to V1
+const BUG_TOKEN_ADDRESS = (process.env.NEXT_PUBLIC_BUG_TOKEN_V2_ADDRESS || process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS)!;
 const BUG_NFT_ADDRESS = process.env.NEXT_PUBLIC_BUG_NFT_ADDRESS!;
-const BUG_VOTING_ADDRESS = process.env.NEXT_PUBLIC_BUG_VOTING_ADDRESS!;
+const BUG_VOTING_ADDRESS = (process.env.NEXT_PUBLIC_BUG_VOTING_V2_ADDRESS || process.env.NEXT_PUBLIC_BUG_VOTING_ADDRESS)!;
 
 // RPC configuration
 const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || "http://127.0.0.1:8545";

@@ -43,7 +43,8 @@ export function UnlockFaucetModal({
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
 
-      const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS;
+      // Use V2 contract for unlock functionality
+      const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_V2_ADDRESS || process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS;
       if (!bugTokenAddress) {
         throw new Error("Contract address not configured");
       }
@@ -87,7 +88,8 @@ export function UnlockFaucetModal({
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
 
-      const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS;
+      // Use V2 contract for unlock functionality
+      const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_V2_ADDRESS || process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS;
       const pyusdAddress = process.env.NEXT_PUBLIC_PYUSD_ADDRESS;
 
       if (!bugTokenAddress || !pyusdAddress) {

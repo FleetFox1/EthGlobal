@@ -26,7 +26,8 @@ export function FaucetButton() {
       if (!window.ethereum) return;
 
       const provider = new ethers.BrowserProvider(window.ethereum);
-      const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS;
+      // Use V2 contract for unlock functionality
+      const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_V2_ADDRESS || process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS;
       
       if (!bugTokenAddress) return;
 
@@ -72,7 +73,8 @@ export function FaucetButton() {
 
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS!;
+      // Use V2 contract for claiming
+      const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_V2_ADDRESS || process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS!;
       
       const bugTokenABI = [
         "function claimFaucet() external",

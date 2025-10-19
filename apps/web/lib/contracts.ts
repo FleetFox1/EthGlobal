@@ -6,12 +6,14 @@ const BUG_TOKEN_ADDRESS = (process.env.NEXT_PUBLIC_BUG_TOKEN_V2_ADDRESS || proce
 const BUG_NFT_ADDRESS = process.env.NEXT_PUBLIC_BUG_NFT_ADDRESS!;
 const BUG_VOTING_ADDRESS = (process.env.NEXT_PUBLIC_BUG_VOTING_V2_ADDRESS || process.env.NEXT_PUBLIC_BUG_VOTING_ADDRESS)!;
 const PYUSD_ADDRESS = process.env.NEXT_PUBLIC_PYUSD_ADDRESS!;
+const PROFILE_REGISTRY_ADDRESS = process.env.NEXT_PUBLIC_PROFILE_REGISTRY_ADDRESS!;
 
 // Export addresses for use in components
 export const bugTokenAddress = BUG_TOKEN_ADDRESS;
 export const bugNFTAddress = BUG_NFT_ADDRESS;
 export const bugVotingAddress = BUG_VOTING_ADDRESS;
 export const pyusdAddress = PYUSD_ADDRESS;
+export const profileRegistryAddress = PROFILE_REGISTRY_ADDRESS;
 
 // RPC configuration
 const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || "http://127.0.0.1:8545";
@@ -66,6 +68,17 @@ const PYUSD_ABI = [
   "function allowance(address owner, address spender) view returns (uint256)",
   "function transfer(address to, uint256 amount) returns (bool)",
   "function decimals() view returns (uint8)",
+];
+
+// UserProfileRegistry ABI
+const PROFILE_REGISTRY_ABI = [
+  "function setProfile(string memory ipfsHash) returns (bool)",
+  "function getProfile(address user) view returns (string memory)",
+  "function hasProfile(address user) view returns (bool)",
+  "function getProfileInfo(address user) view returns (string memory ipfsHash, uint256 lastUpdated)",
+  "function profileCount() view returns (uint256)",
+  "event ProfileCreated(address indexed user, string ipfsHash, uint256 timestamp)",
+  "event ProfileUpdated(address indexed user, string ipfsHash, uint256 timestamp)",
 ];
 
 /**
@@ -138,6 +151,20 @@ export function getPYUSDContract(signerOrProvider?: ethers.Signer | ethers.Provi
   return new ethers.Contract(
     PYUSD_ADDRESS,
     PYUSD_ABI,
+    signerOrProvider || getProvider()
+  );
+}
+
+/**
+ * Get UserProfileRegistry contract instance
+ */
+export function getProfileRegistryContract(signerOrProvider?: ethers.Signer | ethers.Provider) {
+  if (!PROFILE_REGISTRY_ADDRESS) {
+    throw new Error("PROFILE_REGISTRY_ADDRESS not set");
+  }
+  return new ethers.Contract(
+    PROFILE_REGISTRY_ADDRESS,
+    PROFILE_REGISTRY_ABI,
     signerOrProvider || getProvider()
   );
 }

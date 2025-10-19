@@ -152,3 +152,152 @@ export function extractCID(ipfsUrl: string): string {
   }
   return ipfsUrl;
 }
+
+// ==================== USER PROFILE FUNCTIONS ====================
+
+export interface UserProfile {
+  username?: string;
+  bio?: string;
+  email?: string;
+  avatar?: string; // IPFS hash of avatar image
+  socialLinks?: {
+    twitter?: string;
+    github?: string;
+    telegram?: string;
+    discord?: string;
+  };
+  wallets?: {
+    eth?: string;
+    solana?: string;
+    bitcoin?: string;
+  };
+  metadata?: {
+    createdAt?: number;
+    updatedAt?: number;
+    version?: string;
+  };
+}
+
+/**
+ * Upload user profile data to IPFS via Lighthouse
+ * @param profileData - User profile object
+ * @param walletAddress - User's wallet address (used for naming)
+ * @returns IPFS hash of uploaded profile
+ */
+export async function uploadProfileToLighthouse(
+  profileData: UserProfile,
+  walletAddress: string
+): Promise<string> {
+  try {
+    // Add metadata
+    const profileWithMetadata: UserProfile = {
+      ...profileData,
+      metadata: {
+        ...profileData.metadata,
+        updatedAt: Date.now(),
+        version: "1.0",
+      },
+    };
+
+    // Convert to JSON string
+    const jsonString = JSON.stringify(profileWithMetadata, null, 2);
+
+    // Upload to IPFS
+    const result = await uploadTextToIPFS(
+      jsonString,
+      `profile-${walletAddress}.json`
+    );
+
+    console.log("✅ Profile uploaded to IPFS:", result.cid);
+    return result.cid;
+  } catch (error) {
+    console.error("❌ Error uploading profile to Lighthouse:", error);
+    throw error;
+  }
+}
+
+/**
+ * Upload avatar image to IPFS via Lighthouse (client-side)
+ * @param file - Image file to upload
+ * @returns IPFS hash of uploaded image
+ */
+export async function uploadAvatarToLighthouse(file: File): Promise<string> {
+  const apiKey = process.env.NEXT_PUBLIC_LIGHTHOUSE_API_KEY;
+  
+  if (!apiKey) {
+    throw new Error("Lighthouse API key not configured");
+  }
+
+  try {
+    // Validate file is an image
+    if (!file.type.startsWith("image/")) {
+      throw new Error("File must be an image");
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      throw new Error("Image must be less than 5MB");
+    }
+
+    console.log("📤 Uploading avatar to Lighthouse IPFS...");
+    const response = await lighthouse.upload([file], apiKey);
+
+    if (!response?.data?.Hash) {
+      throw new Error("No IPFS hash returned from Lighthouse");
+    }
+
+    const ipfsHash = response.data.Hash;
+    console.log("✅ Avatar uploaded to IPFS:", ipfsHash);
+
+    return ipfsHash;
+  } catch (error) {
+    console.error("❌ Error uploading avatar to Lighthouse:", error);
+    throw error;
+  }
+}
+
+/**
+ * Fetch user profile data from IPFS via Lighthouse gateway
+ * @param ipfsHash - IPFS hash of the profile
+ * @returns User profile object
+ */
+export async function fetchProfileFromLighthouse(
+  ipfsHash: string
+): Promise<UserProfile | null> {
+  if (!ipfsHash) {
+    return null;
+  }
+
+  try {
+    const gatewayUrl = getIPFSUrl(ipfsHash);
+    console.log("📥 Fetching profile from IPFS:", ipfsHash);
+
+    const response = await fetch(gatewayUrl);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch from IPFS: ${response.statusText}`);
+    }
+
+    const profile: UserProfile = await response.json();
+    console.log("✅ Profile fetched from IPFS");
+
+    return profile;
+  } catch (error) {
+    console.error("❌ Error fetching profile from Lighthouse:", error);
+    return null;
+  }
+}
+
+/**
+ * Get public URL for an avatar image stored on IPFS
+ * @param ipfsHash - IPFS hash of the avatar image
+ * @returns Public URL to access the image
+ */
+export function getAvatarUrl(ipfsHash: string | undefined): string | undefined {
+  if (!ipfsHash) {
+    return undefined;
+  }
+
+  return getIPFSUrl(ipfsHash);
+}

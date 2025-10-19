@@ -5,18 +5,35 @@ import { ethers } from "ethers";
 const BUG_TOKEN_ADDRESS = (process.env.NEXT_PUBLIC_BUG_TOKEN_V2_ADDRESS || process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS)!;
 const BUG_NFT_ADDRESS = process.env.NEXT_PUBLIC_BUG_NFT_ADDRESS!;
 const BUG_VOTING_ADDRESS = (process.env.NEXT_PUBLIC_BUG_VOTING_V2_ADDRESS || process.env.NEXT_PUBLIC_BUG_VOTING_ADDRESS)!;
+const PYUSD_ADDRESS = process.env.NEXT_PUBLIC_PYUSD_ADDRESS!;
+
+// Export addresses for use in components
+export const bugTokenAddress = BUG_TOKEN_ADDRESS;
+export const bugNFTAddress = BUG_NFT_ADDRESS;
+export const bugVotingAddress = BUG_VOTING_ADDRESS;
+export const pyusdAddress = PYUSD_ADDRESS;
 
 // RPC configuration
 const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || "http://127.0.0.1:8545";
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
-// Import ABIs (you'll need to copy these from artifacts after deployment)
-// For now, we'll define minimal ABIs for the functions we need
+// Import ABIs for V2 contracts
 const BUG_TOKEN_ABI = [
+  // V2 Functions
+  "function hasUnlocked(address user) view returns (bool)",
+  "function unlockWithETH() payable returns (bool)",
+  "function unlockWithPYUSD(uint256 amount) returns (bool)",
+  "function claimFaucet() returns (bool)",
+  "function lastClaim(address user) view returns (uint256)",
+  "function FAUCET_AMOUNT() view returns (uint256)",
+  "function FAUCET_COOLDOWN() view returns (uint256)",
+  // Standard ERC20
   "function balanceOf(address owner) view returns (uint256)",
   "function approve(address spender, uint256 amount) returns (bool)",
   "function transfer(address to, uint256 amount) returns (bool)",
-  "function claimFaucet() returns (bool)",
+  "function allowance(address owner, address spender) view returns (uint256)",
+  // Admin functions
+  "function owner() view returns (address)",
   "function mint(address to, uint256 amount) returns (bool)",
 ];
 
@@ -26,14 +43,29 @@ const BUG_NFT_ABI = [
   "function getBugsByDiscoverer(address discoverer) view returns (uint256[])",
   "function totalBugs() view returns (uint256)",
   "function ownerOf(uint256 tokenId) view returns (address)",
+  "function owner() view returns (address)",
 ];
 
 const BUG_VOTING_ABI = [
+  // V2 Functions - Manual NFT claiming
   "function submitBug(string memory ipfsHash, uint8 rarity) returns (uint256)",
   "function vote(uint256 submissionId, bool voteFor) returns (bool)",
+  "function resolveSubmission(uint256 submissionId) returns (bool)",
+  "function claimNFT(uint256 submissionId) returns (uint256)",
   "function getSubmission(uint256 submissionId) view returns (tuple(uint256 id, address submitter, string ipfsHash, uint256 createdAt, uint256 votesFor, uint256 votesAgainst, bool resolved, bool approved, uint256 nftTokenId, uint8 rarity))",
   "function getActiveSubmissions() view returns (uint256[])",
   "function submissionCount() view returns (uint256)",
+  "function hasVoted(uint256 submissionId, address voter) view returns (bool)",
+  "function owner() view returns (address)",
+];
+
+// PYUSD ABI (standard ERC20)
+const PYUSD_ABI = [
+  "function balanceOf(address owner) view returns (uint256)",
+  "function approve(address spender, uint256 amount) returns (bool)",
+  "function allowance(address owner, address spender) view returns (uint256)",
+  "function transfer(address to, uint256 amount) returns (bool)",
+  "function decimals() view returns (uint8)",
 ];
 
 /**
@@ -92,6 +124,20 @@ export function getBugVotingContract(signerOrProvider?: ethers.Signer | ethers.P
   return new ethers.Contract(
     BUG_VOTING_ADDRESS,
     BUG_VOTING_ABI,
+    signerOrProvider || getProvider()
+  );
+}
+
+/**
+ * Get PYUSD contract instance
+ */
+export function getPYUSDContract(signerOrProvider?: ethers.Signer | ethers.Provider) {
+  if (!PYUSD_ADDRESS) {
+    throw new Error("PYUSD_ADDRESS not set");
+  }
+  return new ethers.Contract(
+    PYUSD_ADDRESS,
+    PYUSD_ABI,
     signerOrProvider || getProvider()
   );
 }

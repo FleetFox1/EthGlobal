@@ -2,6 +2,14 @@
 
 import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
+import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { profileRegistryAddress } from './contracts';
+import { 
+  UserProfile as IPFSUserProfile,
+  fetchProfileFromLighthouse, 
+  uploadProfileToLighthouse,
+  uploadAvatarToLighthouse 
+} from './lighthouse';
 
 export interface UserProfile {
   address: string;
@@ -10,6 +18,9 @@ export interface UserProfile {
   createdAt: number;
   lastLogin: number;
   privyUserId?: string;
+  // IPFS profile data
+  ipfsProfile?: IPFSUserProfile;
+  ipfsHash?: string;
 }
 
 interface UserContextType {
@@ -18,6 +29,11 @@ interface UserContextType {
   error: string | null;
   isAuthenticated: boolean;
   walletAddress: string | undefined;
+  // IPFS profile functions
+  updateProfile: (profileData: IPFSUserProfile) => Promise<void>;
+  uploadAvatar: (file: File) => Promise<string>;
+  refreshProfile: () => Promise<void>;
+  isUpdatingProfile: boolean;
 }
 
 const UserContext = createContext<UserContextType>({
@@ -26,6 +42,10 @@ const UserContext = createContext<UserContextType>({
   error: null,
   isAuthenticated: false,
   walletAddress: undefined,
+  updateProfile: async () => {},
+  uploadAvatar: async () => '',
+  refreshProfile: async () => {},
+  isUpdatingProfile: false,
 });
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
@@ -33,8 +53,129 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const hasRegistered = useRef(false);
   const walletAddress = user?.wallet?.address;
+
+  // Read IPFS hash from ProfileRegistry contract
+  const { data: ipfsHash, refetch: refetchHash } = useReadContract({
+    address: profileRegistryAddress as `0x${string}`,
+    abi: [
+      {
+        name: 'getProfile',
+        type: 'function',
+        stateMutability: 'view',
+        inputs: [{ name: 'user', type: 'address' }],
+        outputs: [{ name: '', type: 'string' }],
+      },
+    ],
+    functionName: 'getProfile',
+    args: walletAddress ? [walletAddress as `0x${string}`] : undefined,
+    query: {
+      enabled: !!walletAddress,
+    },
+  });
+
+  // Write contract hook for updating profile
+  const { writeContract, data: txHash } = useWriteContract();
+
+  // Wait for transaction confirmation
+  const { isLoading: isTxPending, isSuccess: isTxSuccess } = useWaitForTransactionReceipt({
+    hash: txHash,
+  });
+
+  // Fetch IPFS profile data when hash changes
+  useEffect(() => {
+    if (ipfsHash && typeof ipfsHash === 'string' && ipfsHash.length > 0) {
+      fetchIPFSProfile(ipfsHash as string);
+    }
+  }, [ipfsHash]);
+
+  // Refetch profile after successful transaction
+  useEffect(() => {
+    if (isTxSuccess) {
+      console.log('✅ Profile updated on-chain, refetching...');
+      refetchHash();
+      setIsUpdatingProfile(false);
+    }
+  }, [isTxSuccess]);
+
+  const fetchIPFSProfile = async (hash: string) => {
+    try {
+      console.log('📥 Fetching profile from IPFS:', hash);
+      const ipfsProfile = await fetchProfileFromLighthouse(hash);
+      
+      if (ipfsProfile && profile) {
+        setProfile({
+          ...profile,
+          ipfsProfile,
+          ipfsHash: hash,
+        });
+      }
+    } catch (err) {
+      console.error('❌ Error fetching IPFS profile:', err);
+    }
+  };
+
+  const updateProfile = async (profileData: IPFSUserProfile) => {
+    if (!walletAddress) {
+      throw new Error('Wallet not connected');
+    }
+
+    setIsUpdatingProfile(true);
+    setError(null);
+
+    try {
+      console.log('📤 Uploading profile to IPFS...');
+      
+      // Upload profile to IPFS
+      const newIpfsHash = await uploadProfileToLighthouse(profileData, walletAddress);
+      console.log('✅ Profile uploaded:', newIpfsHash);
+
+      // Update on-chain registry
+      console.log('📝 Updating on-chain registry...');
+      writeContract({
+        address: profileRegistryAddress as `0x${string}`,
+        abi: [
+          {
+            name: 'setProfile',
+            type: 'function',
+            stateMutability: 'nonpayable',
+            inputs: [{ name: 'ipfsHash', type: 'string' }],
+            outputs: [{ name: '', type: 'bool' }],
+          },
+        ],
+        functionName: 'setProfile',
+        args: [newIpfsHash],
+      });
+
+      // Note: Transaction confirmation handled by useEffect
+    } catch (err: any) {
+      console.error('❌ Error updating profile:', err);
+      setError(err.message || 'Failed to update profile');
+      setIsUpdatingProfile(false);
+      throw err;
+    }
+  };
+
+  const uploadAvatar = async (file: File): Promise<string> => {
+    try {
+      console.log('📤 Uploading avatar to IPFS...');
+      const avatarHash = await uploadAvatarToLighthouse(file);
+      console.log('✅ Avatar uploaded:', avatarHash);
+      return avatarHash;
+    } catch (err: any) {
+      console.error('❌ Error uploading avatar:', err);
+      throw err;
+    }
+  };
+
+  const refreshProfile = async () => {
+    if (ipfsHash && typeof ipfsHash === 'string') {
+      await fetchIPFSProfile(ipfsHash as string);
+    }
+    await refetchHash();
+  };
 
   useEffect(() => {
     if (!ready || !authenticated || !user || !walletAddress) {
@@ -98,6 +239,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         error,
         isAuthenticated: authenticated,
         walletAddress,
+        updateProfile,
+        uploadAvatar,
+        refreshProfile,
+        isUpdatingProfile: isUpdatingProfile || isTxPending,
       }}
     >
       {children}

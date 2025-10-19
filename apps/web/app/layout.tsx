@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { PrivyProvider } from "@/components/PrivyProvider";
 import { UserProvider } from "@/lib/UserContext";
 import { Header } from "@/components/Header";
+import { LandingModalWrapper } from "@/components/LandingModalWrapper";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -45,6 +46,7 @@ export default function RootLayout({
         <PrivyProvider>
           <UserProvider>
             <Header />
+            <LandingModalWrapper />
             {children}
           </UserProvider>
         </PrivyProvider>

@@ -2,7 +2,7 @@
 
 import { WalletButton } from '@/components/WalletButton';
 import { useAdmin } from '@/lib/useAdmin';
-import { Shield } from 'lucide-react';
+import { Shield, Heart } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 
@@ -37,8 +37,15 @@ export function Header() {
           </span>
         </a>
 
-        {/* Right: Admin Link + Wallet Button */}
+        {/* Right: Conservation + Admin Link + Wallet Button */}
         <div className="flex items-center gap-3">
+          <Link 
+            href="/conservation" 
+            className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-accent transition-colors text-green-500 hover:text-green-400"
+          >
+            <Heart className="h-4 w-4" />
+            <span className="text-sm font-medium hidden sm:inline">Conservation</span>
+          </Link>
           {isAdmin && (
             <Link 
               href="/admin" 

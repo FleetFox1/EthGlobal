@@ -55,7 +55,15 @@ export function PrivyProvider({ children }: { children: React.ReactNode }) {
           accentColor: '#22c55e',
           logo: 'https://i.imgur.com/your-logo.png',
         },
-        loginMethods: ['wallet', 'email', 'google'],
+        loginMethods: ['wallet'],
+        embeddedWallets: {
+          ethereum: {
+            createOnLogin: 'off',
+          },
+          solana: {
+            createOnLogin: 'off',
+          },
+        },
       }}
     >
       <QueryClientProvider client={queryClient}>

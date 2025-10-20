@@ -66,23 +66,25 @@ export default function Home() {
             </Link>
           </div>
           
-          {/* Stats Overview */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="bg-card border border-border rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold">6</p>
-              <p className="text-xs text-muted-foreground">Bugs Collected</p>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold">23</p>
-              <p className="text-xs text-muted-foreground">Votes Cast</p>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold">600</p>
-              <p className="text-xs text-muted-foreground">BUG Tokens</p>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold">#42</p>
-              <p className="text-xs text-muted-foreground">Your Rank</p>
+          {/* How It Works */}
+          <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/50 rounded-lg p-6">
+            <h2 className="text-xl font-bold mb-4 text-center">How BugDex Works</h2>
+            <div className="grid sm:grid-cols-3 gap-4 text-sm">
+              <div className="text-center">
+                <div className="text-3xl mb-2">📸</div>
+                <h3 className="font-semibold mb-1">1. Discover</h3>
+                <p className="text-muted-foreground">Photograph bugs using your camera</p>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl mb-2">🗳️</div>
+                <h3 className="font-semibold mb-1">2. Vote</h3>
+                <p className="text-muted-foreground">Community verifies submissions (earn 5 BUG)</p>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl mb-2">🎨</div>
+                <h3 className="font-semibold mb-1">3. Collect NFTs</h3>
+                <p className="text-muted-foreground">Approved bugs become unique NFTs</p>
+              </div>
             </div>
           </div>
         </div>

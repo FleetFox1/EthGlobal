@@ -96,8 +96,8 @@ export default function ConservationPage() {
               Help Save Our Bugs
             </h2>
             <p className="text-xl text-gray-300 leading-relaxed">
-              Insects are essential to our ecosystem, but they're disappearing at an alarming rate. 
-              By using BugDex, you're contributing to conservation efforts worldwide.
+              Insects are essential to our ecosystem, but they&apos;re disappearing at an alarming rate.
+              By using BugDex, you&apos;re contributing to conservation efforts worldwide.
             </p>
           </div>
         </div>
@@ -155,7 +155,7 @@ export default function ConservationPage() {
           {/* Partner Organizations */}
           <h3 className="text-3xl font-bold mb-8 text-center">Conservation Partners</h3>
           <p className="text-center text-gray-400 mb-8">
-            We're proud to support these organizations working to protect insects worldwide
+            We&apos;re proud to support these organizations working to protect insects worldwide
           </p>
 
           <div className="space-y-6">
@@ -200,7 +200,7 @@ export default function ConservationPage() {
               <h3 className="text-2xl font-bold mb-4">Start Making a Difference Today</h3>
               <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
                 Every bug you discover, every vote you cast, and every token you earn helps support 
-                these incredible organizations in their mission to protect our planet's smallest heroes.
+                these incredible organizations in their mission to protect our planet&apos;s smallest heroes.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link href="/">

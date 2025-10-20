@@ -26,8 +26,11 @@ export async function uploadFileToIPFS(
     let filePath: string;
     
     if (Buffer.isBuffer(file)) {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const fs = require("fs");
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const path = require("path");
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const tmpDir = require("os").tmpdir();
       filePath = path.join(tmpDir, fileName);
       fs.writeFileSync(filePath, file);
@@ -40,6 +43,7 @@ export async function uploadFileToIPFS(
     
     // Clean up temp file if we created one
     if (Buffer.isBuffer(file)) {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const fs = require("fs");
       fs.unlinkSync(filePath);
     }
@@ -67,8 +71,11 @@ export async function uploadTextToIPFS(
   fileName: string = "metadata.json"
 ): Promise<{ cid: string; url: string }> {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const fs = require("fs");
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const path = require("path");
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const tmpDir = require("os").tmpdir();
     const filePath = path.join(tmpDir, fileName);
 

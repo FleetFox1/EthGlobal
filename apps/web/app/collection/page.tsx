@@ -599,7 +599,7 @@ export default function CollectionPage() {
                           <span className="font-semibold">Not Approved</span>
                         </div>
                         <div className="text-xs mt-1">
-                          This submission didn't receive enough votes
+                          This submission didn&apos;t receive enough votes
                         </div>
                       </div>
                     )}

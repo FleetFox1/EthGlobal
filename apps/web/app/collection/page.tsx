@@ -310,18 +310,46 @@ export default function CollectionPage() {
           </div>
         </div>
 
+        {/* Info Banner */}
+        {uploads.length > 0 && uploads.some(u => !u.submittedToBlockchain) && (
+          <div className="mb-6 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+              <div className="space-y-1">
+                <h3 className="font-semibold text-sm">How BugDex Works</h3>
+                <p className="text-sm text-muted-foreground">
+                  Your bug photos are <span className="font-semibold text-foreground">saved to IPFS</span> (decentralized storage) for free! 
+                  To mint an NFT and earn rewards, submit your discovery to the blockchain for community voting.
+                  Approved bugs earn you an NFT and BUG tokens!
+                </p>
+                <div className="flex gap-2 text-xs text-muted-foreground mt-2">
+                  <span className="bg-white dark:bg-gray-800 px-2 py-1 rounded">💾 Free IPFS Storage</span>
+                  <span className="bg-white dark:bg-gray-800 px-2 py-1 rounded">🗳️ Community Voting</span>
+                  <span className="bg-white dark:bg-gray-800 px-2 py-1 rounded">🎨 NFT Rewards</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Empty State */}
         {uploads.length === 0 && (
-          <Card className="p-12 text-center">
+          <Card className="p-12 text-center max-w-2xl mx-auto">
             <Upload className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
             <h2 className="text-2xl font-bold mb-2">No bugs yet!</h2>
-            <p className="text-muted-foreground mb-6">
-              Take your first bug photo to get started
+            <p className="text-muted-foreground mb-4">
+              Start discovering and documenting bugs around you
             </p>
+            <div className="bg-muted/50 p-4 rounded-lg mb-6 text-sm text-left space-y-2">
+              <p><strong>📸 Take Photos:</strong> Snap bugs you discover</p>
+              <p><strong>💾 Free Storage:</strong> Photos saved to IPFS (decentralized)</p>
+              <p><strong>🗳️ Submit & Earn:</strong> Get community approval to mint NFTs and earn BUG tokens</p>
+              <p><strong>🌍 Help Science:</strong> Contribute to bug conservation data</p>
+            </div>
             <Link href="/">
-              <Button>
+              <Button size="lg">
                 <Upload className="h-4 w-4 mr-2" />
-                Upload Bug Photo
+                Take Your First Bug Photo
               </Button>
             </Link>
           </Card>
@@ -447,26 +475,33 @@ export default function CollectionPage() {
 
                 {/* Action Button */}
                 {!upload.submittedToBlockchain ? (
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent modal from opening
-                      submitToBlockchain(upload);
-                    }}
-                    disabled={submitting === upload.id}
-                    className="w-full"
-                  >
-                    {submitting === upload.id ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Submitting...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="h-4 w-4 mr-2" />
-                        Submit for Voting
-                      </>
-                    )}
-                  </Button>
+                  <div className="space-y-2">
+                    <div className="text-xs text-muted-foreground bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
+                      <span className="font-semibold">💾 Saved Off-Chain</span>
+                      <p className="mt-1">Submit to blockchain to mint NFT and earn rewards! (Requires 10 BUG)</p>
+                    </div>
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent modal from opening
+                        submitToBlockchain(upload);
+                      }}
+                      disabled={submitting === upload.id}
+                      className="w-full"
+                      variant="default"
+                    >
+                      {submitting === upload.id ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Submitting...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4 mr-2" />
+                          Submit for Voting & NFT
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 ) : (
                   <div className="space-y-2">
                     {/* Show voting status */}

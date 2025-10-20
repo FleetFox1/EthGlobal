@@ -1,372 +1,248 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ThumbsUp, ThumbsDown, CheckCircle2, Clock, TrendingUp, Loader2 } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, ThumbsUp, ThumbsDown, CheckCircle2, XCircle, Clock, Trophy, Loader2, AlertCircle, TrendingUp } from "lucide-react";
 import Link from "next/link";
-import { useBugVoting, areContractsConfigured } from "@/lib/contract-hooks";
 import { useWallet } from "@/lib/useWallet";
+import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 
 interface BugSubmission {
   id: number;
-  imageUrl: string;
-  submittedBy: string;
-  submittedAt: string;
-  votes: {
-    real: number;
-    fake: number;
-    total: number;
-  };
-  requiredVotes: number;
-  status: "pending" | "approved" | "rejected";
-  userVote?: "real" | "fake" | null;
-  metadataCid?: string; // IPFS metadata CID
-  canClaimNFT?: boolean; // If approved and user is discoverer
+  submitter: string;
+  ipfsHash: string;
+  createdAt: number;
+  votesFor: number;
+  votesAgainst: number;
+  resolved: boolean;
+  approved: boolean;
+  nftClaimed: boolean;
+  nftTokenId: number;
+  imageUrl?: string;
+  metadata?: any;
+  hasVoted?: boolean;
 }
 
-// Mock bug submissions
-const MOCK_SUBMISSIONS: BugSubmission[] = [
+const BUG_VOTING_V2_ABI = [
   {
-    id: 1,
-    imageUrl: "https://images.unsplash.com/photo-1582515073490-39981397c445?w=600&h=600&fit=crop",
-    submittedBy: "0x742d...9a3f",
-    submittedAt: "2025-10-10T14:30:00",
-    votes: { real: 12, fake: 3, total: 15 },
-    requiredVotes: 20,
-    status: "pending",
-    userVote: null,
+    inputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    name: "submissions",
+    outputs: [
+      { internalType: "uint256", name: "id", type: "uint256" },
+      { internalType: "address", name: "submitter", type: "address" },
+      { internalType: "string", name: "ipfsHash", type: "string" },
+      { internalType: "uint256", name: "createdAt", type: "uint256" },
+      { internalType: "uint256", name: "votesFor", type: "uint256" },
+      { internalType: "uint256", name: "votesAgainst", type: "uint256" },
+      { internalType: "bool", name: "resolved", type: "bool" },
+      { internalType: "bool", name: "approved", type: "bool" },
+      { internalType: "bool", name: "nftClaimed", type: "bool" },
+      { internalType: "uint256", name: "nftTokenId", type: "uint256" },
+    ],
+    stateMutability: "view",
+    type: "function",
   },
   {
-    id: 2,
-    imageUrl: "https://images.unsplash.com/photo-1568526381923-caf3fd520382?w=600&h=600&fit=crop",
-    submittedBy: "0x8f3e...2b1c",
-    submittedAt: "2025-10-10T13:15:00",
-    votes: { real: 8, fake: 7, total: 15 },
-    requiredVotes: 20,
-    status: "pending",
-    userVote: null,
+    inputs: [],
+    name: "submissionCount",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
   },
   {
-    id: 3,
-    imageUrl: "https://images.unsplash.com/photo-1504006833117-8886a355efbf?w=600&h=600&fit=crop",
-    submittedBy: "0x5a9d...7e4f",
-    submittedAt: "2025-10-10T12:00:00",
-    votes: { real: 18, fake: 2, total: 20 },
-    requiredVotes: 20,
-    status: "approved",
-    userVote: "real",
+    inputs: [
+      { internalType: "uint256", name: "", type: "uint256" },
+      { internalType: "address", name: "", type: "address" },
+    ],
+    name: "hasVoted",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "view",
+    type: "function",
   },
   {
-    id: 4,
-    imageUrl: "https://images.unsplash.com/photo-1534189324936-e6d2320c8e94?w=600&h=600&fit=crop",
-    submittedBy: "0x3c7b...6d2a",
-    submittedAt: "2025-10-10T11:30:00",
-    votes: { real: 5, fake: 2, total: 7 },
-    requiredVotes: 20,
-    status: "pending",
-    userVote: null,
+    inputs: [
+      { internalType: "uint256", name: "submissionId", type: "uint256" },
+      { internalType: "bool", name: "voteFor", type: "bool" },
+    ],
+    name: "vote",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
   },
   {
-    id: 5,
-    imageUrl: "https://images.unsplash.com/photo-1599809275671-b5942cabc7a2?w=600&h=600&fit=crop",
-    submittedBy: "0x9e2f...4c8b",
-    submittedAt: "2025-10-10T10:45:00",
-    votes: { real: 3, fake: 15, total: 18 },
-    requiredVotes: 20,
-    status: "rejected",
-    userVote: "fake",
+    inputs: [{ internalType: "uint256", name: "submissionId", type: "uint256" }],
+    name: "claimNFT",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
   },
-];
+] as const;
+
+const VOTING_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_BUG_VOTING_V2_ADDRESS as `0x$${string}`;
 
 export default function VotingPage() {
+  const [activeTab, setActiveTab] = useState<"all" | "mine" | "voted">("all");
   const [submissions, setSubmissions] = useState<BugSubmission[]>([]);
-  const [filter, setFilter] = useState<"all" | "pending" | "voted">("pending");
-  const [isLoading, setIsLoading] = useState(false); // Changed to false for faster render
-  const [isVoting, setIsVoting] = useState<number | null>(null);
-  const [isClaiming, setIsClaiming] = useState<number | null>(null);
-  
+  const [isLoading, setIsLoading] = useState(true);
+
   const { isConnected, address } = useWallet();
-  const { getActiveSubmissions, vote, claimNFT } = useBugVoting();
+  const { writeContract, data: txHash, isPending: isWriting } = useWriteContract();
+  const { isLoading: isTxPending, isSuccess: isTxSuccess } = useWaitForTransactionReceipt({ hash: txHash });
 
-  // Load submissions from blockchain
+  const { data: submissionCount, refetch: refetchCount } = useReadContract({
+    address: VOTING_CONTRACT_ADDRESS,
+    abi: BUG_VOTING_V2_ABI,
+    functionName: "submissionCount",
+  });
+
   useEffect(() => {
-    loadSubmissions();
-  }, [isConnected, address]);
-
-  const loadSubmissions = async () => {
-    setIsLoading(true);
-    try {
-      // If contracts not configured, show mock data
-      if (!areContractsConfigured()) {
-        console.log("⚠️ Contracts not configured - using mock data");
-        setSubmissions(MOCK_SUBMISSIONS);
-        setIsLoading(false);
-        return;
-      }
-
-      // Fetch real submissions from blockchain
-      const activeSubmissions = await getActiveSubmissions();
-      
-      // Transform blockchain data to UI format
-      const formattedSubmissions: BugSubmission[] = await Promise.all(
-        activeSubmissions.map(async (sub: any, index: number) => {
-          // Fetch metadata from IPFS if available
-          let imageUrl = "https://images.unsplash.com/photo-1582515073490-39981397c445?w=600&h=600&fit=crop";
-          
-          if (sub.metadataCid) {
-            try {
-              const metadataUrl = `https://gateway.lighthouse.storage/ipfs/${sub.metadataCid}`;
-              const metadataRes = await fetch(metadataUrl);
-              const metadata = await metadataRes.json();
-              if (metadata.image) {
-                imageUrl = metadata.image.replace('ipfs://', 'https://gateway.lighthouse.storage/ipfs/');
-              }
-            } catch (err) {
-              console.error("Failed to fetch metadata:", err);
-            }
-          }
-
-          // Calculate status
-          let status: "pending" | "approved" | "rejected" = "pending";
-          if (sub.votesFor + sub.votesAgainst >= sub.requiredVotes) {
-            const realPercentage = (sub.votesFor / (sub.votesFor + sub.votesAgainst)) * 100;
-            status = realPercentage >= 70 ? "approved" : "rejected";
-          }
-
-          // Check if user can claim NFT
-          const canClaimNFT = status === "approved" && 
-                             sub.discoverer?.toLowerCase() === address?.toLowerCase() &&
-                             !sub.nftMinted;
-
-          return {
-            id: Number(sub.id),
-            imageUrl,
-            submittedBy: sub.discoverer?.slice(0, 6) + "..." + sub.discoverer?.slice(-4) || "Unknown",
-            submittedAt: new Date(Number(sub.timestamp) * 1000).toISOString(),
-            votes: {
-              real: Number(sub.votesFor),
-              fake: Number(sub.votesAgainst),
-              total: Number(sub.votesFor) + Number(sub.votesAgainst),
-            },
-            requiredVotes: Number(sub.requiredVotes),
-            status,
-            userVote: sub.hasVoted ? (sub.votedFor ? "real" : "fake") : null,
-            metadataCid: sub.metadataCid,
-            canClaimNFT,
-          };
-        })
-      );
-
-      setSubmissions(formattedSubmissions);
-    } catch (error) {
-      console.error("Failed to load submissions:", error);
-      // Fallback to mock data
-      setSubmissions(MOCK_SUBMISSIONS);
-    } finally {
+    if (submissionCount) {
+      loadSubmissions();
+    } else {
       setIsLoading(false);
     }
-  };
+  }, [submissionCount, address]);
 
-  const handleVote = async (submissionId: number, voteChoice: "real" | "fake") => {
-    if (!isConnected || !address) {
-      alert("Please connect your wallet to vote!");
-      return;
+  useEffect(() => {
+    if (isTxSuccess) {
+      setTimeout(() => {
+        refetchCount();
+        loadSubmissions();
+      }, 2000);
     }
+  }, [isTxSuccess]);
 
-    if (!areContractsConfigured()) {
-      // Mock voting for demo
-      setSubmissions((prev) =>
-        prev.map((submission) => {
-          if (submission.id === submissionId) {
-            const newVotes = {
-              real: submission.votes.real + (voteChoice === "real" ? 1 : 0),
-              fake: submission.votes.fake + (voteChoice === "fake" ? 1 : 0),
-              total: submission.votes.total + 1,
-            };
-            let newStatus = submission.status;
-            if (newVotes.total >= submission.requiredVotes) {
-              const realPercentage = (newVotes.real / newVotes.total) * 100;
-              newStatus = realPercentage >= 70 ? "approved" : "rejected";
-            }
-            return { ...submission, votes: newVotes, status: newStatus, userVote: voteChoice };
+  const loadSubmissions = async () => {
+    if (!submissionCount) return;
+    setIsLoading(true);
+    const count = Number(submissionCount);
+    const loaded: BugSubmission[] = [];
+
+    for (let i = 1; i <= count; i++) {
+      try {
+        const res = await fetch(`/api/contract-read?address=$${VOTING_CONTRACT_ADDRESS}&method=submissions&args=$${i}`);
+        const data = await res.json();
+        if (data.result) {
+          const sub = data.result;
+          let imageUrl = "/placeholder-bug.jpg";
+          let metadata = null;
+          if (sub.ipfsHash) {
+            try {
+              const metaRes = await fetch(`https://gateway.lighthouse.storage/ipfs/$${sub.ipfsHash}`);
+              metadata = await metaRes.json();
+              if (metadata.image) {
+                imageUrl = metadata.image.replace("ipfs://", "https://gateway.lighthouse.storage/ipfs/");
+              }
+            } catch (e) { console.error("IPFS error:", e); }
           }
-          return submission;
-        })
-      );
-      return;
-    }
-
-    setIsVoting(submissionId);
-    try {
-      console.log(`📝 Voting ${voteChoice} on submission ${submissionId}...`);
-      const txHash = await vote(submissionId, voteChoice === "real");
-      console.log("✅ Vote submitted:", txHash);
-      
-      // Reload submissions to reflect new vote
-      await loadSubmissions();
-      
-      alert(`Vote recorded!\n\nYou earned 5 BUG tokens!\nTx: ${txHash}`);
-    } catch (error: any) {
-      console.error("Vote failed:", error);
-      alert(`Failed to vote: ${error.message || "Unknown error"}`);
-    } finally {
-      setIsVoting(null);
-    }
-  };
-
-  const handleClaimNFT = async (submissionId: number) => {
-    if (!isConnected || !address) {
-      alert("Please connect your wallet!");
-      return;
-    }
-
-    setIsClaiming(submissionId);
-    try {
-      console.log(`🎨 Claiming NFT for submission ${submissionId}...`);
-      const txHash = await claimNFT(submissionId);
-      console.log("✅ NFT claimed:", txHash);
-      
-      // Reload submissions
-      await loadSubmissions();
-      
-      alert(`NFT minted successfully!\n\nCheck your collection!\nTx: ${txHash}`);
-    } catch (error: any) {
-      console.error("Claim failed:", error);
-      alert(`Failed to claim NFT: ${error.message || "Unknown error"}`);
-    } finally {
-      setIsClaiming(null);
-    }
-  };
-
-  const handleVote_old = (submissionId: number, vote: "real" | "fake") => {
-    setSubmissions((prev) =>
-      prev.map((submission) => {
-        if (submission.id === submissionId) {
-          // Calculate new vote counts
-          const newVotes = {
-            real: submission.votes.real + (vote === "real" ? 1 : 0),
-            fake: submission.votes.fake + (vote === "fake" ? 1 : 0),
-            total: submission.votes.total + 1,
-          };
-
-          // Determine status
-          let newStatus = submission.status;
-          if (newVotes.total >= submission.requiredVotes) {
-            const realPercentage = (newVotes.real / newVotes.total) * 100;
-            newStatus = realPercentage >= 70 ? "approved" : "rejected";
+          let hasVoted = false;
+          if (address) {
+            const voteRes = await fetch(`/api/contract-read?address=$${VOTING_CONTRACT_ADDRESS}&method=hasVoted&args=$${i},$${address}`);
+            const voteData = await voteRes.json();
+            hasVoted = voteData.result || false;
           }
-
-          return {
-            ...submission,
-            votes: newVotes,
-            status: newStatus,
-            userVote: vote,
-          };
+          loaded.push({
+            id: Number(sub.id),
+            submitter: sub.submitter,
+            ipfsHash: sub.ipfsHash,
+            createdAt: Number(sub.createdAt),
+            votesFor: Number(sub.votesFor),
+            votesAgainst: Number(sub.votesAgainst),
+            resolved: sub.resolved,
+            approved: sub.approved,
+            nftClaimed: sub.nftClaimed,
+            nftTokenId: Number(sub.nftTokenId),
+            imageUrl,
+            metadata,
+            hasVoted,
+          });
         }
-        return submission;
-      })
-    );
+      } catch (e) { console.error(`Error loading submission $${i}:`, e); }
+    }
+    setSubmissions(loaded.reverse());
+    setIsLoading(false);
   };
 
-  const filteredSubmissions = submissions.filter((submission) => {
-    if (filter === "pending") return submission.status === "pending";
-    if (filter === "voted") return submission.userVote !== null;
+  const handleVote = (submissionId: number, voteFor: boolean) => {
+    if (!isConnected) { alert("Connect wallet!"); return; }
+    writeContract({
+      address: VOTING_CONTRACT_ADDRESS,
+      abi: BUG_VOTING_V2_ABI,
+      functionName: "vote",
+      args: [BigInt(submissionId), voteFor],
+    });
+  };
+
+  const handleClaimNFT = (submissionId: number) => {
+    if (!isConnected) { alert("Connect wallet!"); return; }
+    writeContract({
+      address: VOTING_CONTRACT_ADDRESS,
+      abi: BUG_VOTING_V2_ABI,
+      functionName: "claimNFT",
+      args: [BigInt(submissionId)],
+    });
+  };
+
+  const filtered = submissions.filter((s) => {
+    if (activeTab === "mine") return s.submitter.toLowerCase() === address?.toLowerCase();
+    if (activeTab === "voted") return s.hasVoted;
     return true;
   });
 
-  const pendingCount = submissions.filter((s) => s.status === "pending").length;
-  const votedCount = submissions.filter((s) => s.userVote !== null).length;
+  const myCount = submissions.filter((s) => s.submitter.toLowerCase() === address?.toLowerCase()).length;
+  const votedCount = submissions.filter((s) => s.hasVoted).length;
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
+      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <Link href="/">
-                <Button variant="ghost" size="icon" aria-label="Back to home">
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
-              </Link>
-              <div>
-                <h1 className="text-2xl font-bold">Community Voting</h1>
-                <p className="text-sm text-muted-foreground">Help verify bug submissions</p>
-              </div>
+          <div className="flex items-center gap-3 mb-4">
+            <Link href="/"><Button variant="ghost" size="icon"><ArrowLeft className="h-5 w-5" /></Button></Link>
+            <div>
+              <h1 className="text-2xl font-bold">Community Voting</h1>
+              <p className="text-sm text-muted-foreground">Verify bugs  Earn rewards</p>
             </div>
           </div>
-
-          {/* Filter Tabs */}
-          <div className="flex gap-2">
-            <Button
-              variant={filter === "pending" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilter("pending")}
-            >
-              Pending ({pendingCount})
-            </Button>
-            <Button
-              variant={filter === "voted" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilter("voted")}
-            >
-              My Votes ({votedCount})
-            </Button>
-            <Button
-              variant={filter === "all" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilter("all")}
-            >
-              All ({submissions.length})
-            </Button>
-          </div>
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="all">All ({submissions.length})</TabsTrigger>
+              <TabsTrigger value="mine">Mine ({myCount})</TabsTrigger>
+              <TabsTrigger value="voted">Voted ({votedCount})</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
       </header>
-
       <main className="container mx-auto px-4 py-6">
-        {/* Info Banner */}
-        <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/50 rounded-lg p-4 mb-6">
-          <div className="flex items-start gap-3">
-            <TrendingUp className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+        <div className="bg-blue-500/10 border border-blue-500/50 rounded-lg p-4 mb-6">
+          <div className="flex gap-3">
+            <TrendingUp className="h-5 w-5 text-blue-500 mt-0.5" />
             <div>
               <h3 className="font-semibold mb-1">How Voting Works</h3>
               <p className="text-sm text-muted-foreground">
-                Vote on bug submissions to help the community verify authenticity. If a submission gets 70%+ "Real" votes,
-                it's approved for free minting! You earn <strong className="text-foreground">5 BUG tokens</strong> for each vote.
+                Vote costs <strong>10 BUG</strong> stake  Get <strong>15 BUG back</strong> (10 + 5 reward) if approved  Need 5 votes to resolve
               </p>
             </div>
           </div>
         </div>
-
-        {/* Submissions Grid */}
         {isLoading ? (
           <div className="text-center py-16">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
-            <p className="text-muted-foreground">Loading submissions...</p>
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading from blockchain...</p>
           </div>
-        ) : filteredSubmissions.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-muted-foreground text-lg mb-4">
-              {filter === "pending" ? "No pending submissions" : "No submissions found"}
+            <AlertCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <p className="text-lg text-muted-foreground mb-2">
+              {activeTab === "mine" ? "No submissions yet" : activeTab === "voted" ? "No votes yet" : "No submissions"}
             </p>
-            {filter !== "all" && (
-              <Button variant="outline" onClick={() => setFilter("all")}>
-                View All Submissions
-              </Button>
-            )}
+            {activeTab !== "all" && <Button variant="outline" onClick={() => setActiveTab("all")}>View All</Button>}
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 gap-6">
-            {filteredSubmissions.map((submission) => (
-              <VotingCard
-                key={submission.id}
-                submission={submission}
-                onVote={handleVote}
-                onClaimNFT={handleClaimNFT}
-                isVoting={isVoting === submission.id}
-                isClaiming={isClaiming === submission.id}
-              />
-            ))}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filtered.map((sub) => <SubmissionCard key={sub.id} submission={sub} onVote={handleVote} onClaimNFT={handleClaimNFT} isProcessing={isWriting || isTxPending} currentAddress={address} />)}
           </div>
         )}
       </main>
@@ -374,188 +250,70 @@ export default function VotingPage() {
   );
 }
 
-function VotingCard({
-  submission,
-  onVote,
-  onClaimNFT,
-  isVoting,
-  isClaiming,
-}: {
-  submission: BugSubmission;
-  onVote: (id: number, vote: "real" | "fake") => void;
-  onClaimNFT?: (id: number) => void;
-  isVoting?: boolean;
-  isClaiming?: boolean;
+function SubmissionCard({ submission: s, onVote, onClaimNFT, isProcessing, currentAddress }: {
+  submission: BugSubmission; onVote: (id: number, voteFor: boolean) => void; onClaimNFT: (id: number) => void; isProcessing: boolean; currentAddress?: string;
 }) {
-  const realPercentage = submission.votes.total > 0
-    ? (submission.votes.real / submission.votes.total) * 100
-    : 0;
-
-  const fakePercentage = submission.votes.total > 0
-    ? (submission.votes.fake / submission.votes.total) * 100
-    : 0;
-
-  const progressPercentage = (submission.votes.total / submission.requiredVotes) * 100;
+  const isMine = s.submitter.toLowerCase() === currentAddress?.toLowerCase();
+  const canClaim = isMine && s.resolved && s.approved && !s.nftClaimed;
+  const total = s.votesFor + s.votesAgainst;
+  const pct = total > 0 ? (s.votesFor / total) * 100 : 0;
 
   return (
-    <div className="bg-card border border-border rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
-      {/* Image */}
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow">
       <div className="aspect-square bg-muted relative">
-        <img
-          src={submission.imageUrl}
-          alt="Bug submission"
-          loading="lazy"
-          className="w-full h-full object-cover"
-        />
-        
-        {/* Status Badge */}
-        {submission.status !== "pending" && (
-          <div className={`absolute top-3 right-3 px-3 py-1.5 rounded-full font-semibold text-sm flex items-center gap-1.5 ${
-            submission.status === "approved"
-              ? "bg-green-500 text-white"
-              : "bg-red-500 text-white"
-          }`}>
-            <CheckCircle2 className="h-4 w-4" />
-            {submission.status === "approved" ? "Approved" : "Rejected"}
-          </div>
-        )}
+        {s.imageUrl && <img src={s.imageUrl} alt="Bug" className="w-full h-full object-cover" />}
+        {s.resolved && <Badge className={`absolute top-3 right-3 $${s.approved ? "bg-green-500" : "bg-red-500"}`}>
+          {s.approved ? <><CheckCircle2 className="h-3 w-3 mr-1" /> Approved</> : <><XCircle className="h-3 w-3 mr-1" /> Rejected</>}
+        </Badge>}
+        {isMine && <Badge className="absolute top-3 left-3 bg-blue-500">Your Submission</Badge>}
       </div>
-
-      {/* Content */}
       <div className="p-4">
-        {/* Submitter Info */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Clock className="h-4 w-4" />
-            <span>{new Date(submission.submittedAt).toLocaleString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              hour: 'numeric',
-              minute: '2-digit',
-            })}</span>
-          </div>
-          <span className="text-sm font-mono text-muted-foreground">
-            {submission.submittedBy}
-          </span>
+        <div className="flex justify-between text-sm text-muted-foreground mb-3">
+          <div className="flex gap-1"><Clock className="h-3.5 w-3.5" />{new Date(s.createdAt * 1000).toLocaleDateString()}</div>
+          <span className="font-mono text-xs">{s.submitter.slice(0, 6)}...{s.submitter.slice(-4)}</span>
         </div>
-
-        {/* Vote Progress */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between text-sm mb-2">
-            <span className="text-muted-foreground">
-              {submission.votes.total} / {submission.requiredVotes} votes
-            </span>
-            <span className="font-semibold">
-              {Math.round(progressPercentage)}%
-            </span>
+        {s.metadata && <div className="mb-3"><h3 className="font-semibold">{s.metadata.name || "Unknown"}</h3>
+          {s.metadata.scientificName && <p className="text-xs italic text-muted-foreground">{s.metadata.scientificName}</p>}</div>}
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <div className="text-center p-2 bg-green-500/10 rounded">
+            <div className="flex justify-center gap-1 mb-1"><ThumbsUp className="h-4 w-4 text-green-500" /><span className="font-bold text-green-500">{s.votesFor}</span></div>
+            <p className="text-xs text-muted-foreground">Approve</p>
           </div>
-          
-          {/* Progress Bar */}
+          <div className="text-center p-2 bg-red-500/10 rounded">
+            <div className="flex justify-center gap-1 mb-1"><ThumbsDown className="h-4 w-4 text-red-500" /><span className="font-bold text-red-500">{s.votesAgainst}</span></div>
+            <p className="text-xs text-muted-foreground">Reject</p>
+          </div>
+        </div>
+        {total > 0 && <div className="mb-3">
+          <div className="flex justify-between text-xs mb-1">
+            <span className="text-muted-foreground">{total} vote{total > 1 ? "s" : ""}  Need 5</span>
+            <span className="font-medium">{Math.round(pct)}% approve</span>
+          </div>
           <div className="h-2 bg-muted rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300"
-              style={{ width: `${Math.min(progressPercentage, 100)}%` }}
-            />
+            <div className="h-full bg-green-500 transition-all" style={{ width: `$${pct}%` }} />
           </div>
-        </div>
-
-        {/* Vote Breakdown */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <ThumbsUp className="h-4 w-4 text-green-500" />
-              <span className="font-semibold">{submission.votes.real}</span>
-            </div>
-            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-              <div
-                className="h-full bg-green-500 transition-all duration-300"
-                style={{ width: `${realPercentage}%` }}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Real ({Math.round(realPercentage)}%)
-            </p>
-          </div>
-          
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <ThumbsDown className="h-4 w-4 text-red-500" />
-              <span className="font-semibold">{submission.votes.fake}</span>
-            </div>
-            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-              <div
-                className="h-full bg-red-500 transition-all duration-300"
-                style={{ width: `${fakePercentage}%` }}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Fake ({Math.round(fakePercentage)}%)
-            </p>
-          </div>
-        </div>
-
-        {/* Voting Buttons */}
-        {submission.status === "pending" && !submission.userVote ? (
-          <div className="grid grid-cols-2 gap-3">
-            <Button
-              onClick={() => onVote(submission.id, "real")}
-              disabled={isVoting}
-              className="bg-green-500 hover:bg-green-600 text-white disabled:opacity-50"
-            >
-              {isVoting ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <ThumbsUp className="h-4 w-4 mr-2" />
-              )}
-              Real
+        </div>}
+        {!s.resolved && !s.hasVoted && !isMine ? (
+          <div className="grid grid-cols-2 gap-2">
+            <Button onClick={() => onVote(s.id, true)} disabled={isProcessing} size="sm" className="bg-green-500 hover:bg-green-600">
+              {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ThumbsUp className="h-4 w-4 mr-1" /> Yes</>}
             </Button>
-            <Button
-              onClick={() => onVote(submission.id, "fake")}
-              disabled={isVoting}
-              className="bg-red-500 hover:bg-red-600 text-white disabled:opacity-50"
-            >
-              {isVoting ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <ThumbsDown className="h-4 w-4 mr-2" />
-              )}
-              Fake
+            <Button onClick={() => onVote(s.id, false)} disabled={isProcessing} size="sm" variant="destructive">
+              {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ThumbsDown className="h-4 w-4 mr-1" /> No</>}
             </Button>
           </div>
-        ) : submission.canClaimNFT && onClaimNFT ? (
-          <Button
-            onClick={() => onClaimNFT(submission.id)}
-            disabled={isClaiming}
-            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
-          >
-            {isClaiming ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Minting NFT...
-              </>
-            ) : (
-              <>
-                🎨 Claim NFT
-              </>
-            )}
+        ) : s.hasVoted ? (
+          <div className="text-center py-2 text-sm text-muted-foreground"> You voted</div>
+        ) : canClaim ? (
+          <Button onClick={() => onClaimNFT(s.id)} disabled={isProcessing} className="w-full bg-gradient-to-r from-purple-500 to-pink-500">
+            {isProcessing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trophy className="h-4 w-4 mr-2" />}Claim NFT
           </Button>
-        ) : submission.userVote ? (
-          <div className={`text-center py-2 rounded-lg font-semibold ${
-            submission.userVote === "real"
-              ? "bg-green-500/20 text-green-700 dark:text-green-400"
-              : "bg-red-500/20 text-red-700 dark:text-red-400"
-          }`}>
-            You voted: {submission.userVote === "real" ? "✓ Real" : "✗ Fake"}
-            <span className="block text-xs font-normal mt-1">
-              +5 BUG earned
-            </span>
-          </div>
-        ) : (
-          <div className="text-center py-2 text-muted-foreground text-sm">
-            Voting closed
-          </div>
-        )}
+        ) : s.nftClaimed ? (
+          <div className="text-center py-2 text-sm"><Trophy className="h-4 w-4 inline mr-1 text-yellow-500" />NFT #{s.nftTokenId}</div>
+        ) : isMine ? (
+          <div className="text-center py-2 text-sm text-muted-foreground">Awaiting votes...</div>
+        ) : null}
       </div>
-    </div>
+    </Card>
   );
 }

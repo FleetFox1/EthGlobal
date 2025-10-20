@@ -12,10 +12,10 @@ import { getIPFSUrl } from "@/lib/lighthouse";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { address: string } }
+  { params }: { params: Promise<{ address: string }> }
 ) {
   try {
-    const { address } = params;
+    const { address } = await params;
 
     // Validation
     if (!address || !address.match(/^0x[a-fA-F0-9]{40}$/)) {

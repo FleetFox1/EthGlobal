@@ -2,8 +2,8 @@
 
 import { useState, useRef } from 'react';
 import { useUser } from '@/lib/UserContext';
-import { UserProfile } from '@/lib/lighthouse';
-import { getAvatarUrl } from '@/lib/lighthouse';
+import { UserProfile } from '@/lib/types/profile';
+import { getAvatarUrl } from '@/lib/ipfs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';

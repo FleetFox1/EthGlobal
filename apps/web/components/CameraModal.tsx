@@ -267,20 +267,23 @@ export function CameraModal({ open, onOpenChange }: CameraModalProps) {
       setUploadProgress(100);
       setCurrentStep('Complete!');
 
-      // Show success with bug name if identified
+      // Show success message with next steps
+      const bugName = bugInfo ? bugInfo.commonName : 'Unknown Bug';
       const successMessage = bugInfo 
-        ? `🎉 Bug identified as ${bugInfo.commonName}!\n\nView it in your collection!`
-        : `🎉 Bug uploaded successfully!\n\nView it in your collection!`;
+        ? `✅ Bug identified as ${bugName}!\n\n📱 Saved to your collection (off-chain)\n\n💡 Want to earn rewards?\nSubmit to voting to mint an NFT and earn BUG tokens!\n(Requires 10 BUG tokens to stake)`
+        : `✅ Bug uploaded successfully!\n\n📱 Saved to your collection (off-chain)\n\n💡 Want to earn rewards?\nSubmit to voting to mint an NFT and earn BUG tokens!\n(Requires 10 BUG tokens to stake)`;
       
-      alert(successMessage);
+      const shouldSubmit = confirm(successMessage + '\n\nGo to your collection now?');
       
       // Reset and close modal first
       handleClose();
       
-      // Redirect to collection page after a short delay to ensure modal is closed
-      setTimeout(() => {
-        router.push('/collection');
-      }, 300);
+      if (shouldSubmit) {
+        // Redirect to collection page after a short delay to ensure modal is closed
+        setTimeout(() => {
+          router.push('/collection');
+        }, 300);
+      }
     } catch (err: any) {
       console.error("❌ Submission error:", err);
       setError(err.message || "Failed to submit bug. Please try again.");

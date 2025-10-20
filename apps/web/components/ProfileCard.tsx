@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { getAvatarUrl, fetchProfileFromLighthouse, UserProfile } from '@/lib/lighthouse';
+import { UserProfile } from '@/lib/types/profile';
+import { getAvatarUrl, fetchProfile as fetchProfileFromIPFS } from '@/lib/ipfs';
 import { useReadContract } from 'wagmi';
 import { profileRegistryAddress } from '@/lib/contracts';
 import { Camera, Mail, Twitter, Github, Send, MessageCircle, Wallet } from 'lucide-react';
@@ -41,7 +42,7 @@ export default function ProfileCard({ address, showFullProfile = false }: Profil
 
   const fetchProfile = async (hash: string) => {
     try {
-      const profileData = await fetchProfileFromLighthouse(hash);
+      const profileData = await fetchProfileFromIPFS(hash);
       setProfile(profileData);
     } catch (err) {
       console.error('Error fetching profile:', err);

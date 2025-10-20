@@ -1,4 +1,7 @@
 import lighthouse from "@lighthouse-web3/sdk";
+import { UserProfile } from './types/profile';
+
+export type { UserProfile };
 
 function getAPIKey(): string {
   const apiKey = process.env.LIGHTHOUSE_API_KEY;
@@ -154,29 +157,6 @@ export function extractCID(ipfsUrl: string): string {
 }
 
 // ==================== USER PROFILE FUNCTIONS ====================
-
-export interface UserProfile {
-  username?: string;
-  bio?: string;
-  email?: string;
-  avatar?: string; // IPFS hash of avatar image
-  socialLinks?: {
-    twitter?: string;
-    github?: string;
-    telegram?: string;
-    discord?: string;
-  };
-  wallets?: {
-    eth?: string;
-    solana?: string;
-    bitcoin?: string;
-  };
-  metadata?: {
-    createdAt?: number;
-    updatedAt?: number;
-    version?: string;
-  };
-}
 
 /**
  * Upload user profile data to IPFS via Lighthouse

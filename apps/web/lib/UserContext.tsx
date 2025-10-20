@@ -6,10 +6,10 @@ import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 
 import { profileRegistryAddress } from './contracts';
 import { 
   UserProfile as IPFSUserProfile,
-  fetchProfileFromLighthouse, 
-  uploadProfileToLighthouse,
-  uploadAvatarToLighthouse 
-} from './lighthouse';
+  uploadProfile,
+  uploadAvatar as uploadAvatarToIPFS,
+  fetchProfile
+} from './ipfs';
 
 export interface UserProfile {
   address: string;
@@ -103,7 +103,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const fetchIPFSProfile = async (hash: string) => {
     try {
       console.log('📥 Fetching profile from IPFS:', hash);
-      const ipfsProfile = await fetchProfileFromLighthouse(hash);
+      const ipfsProfile = await fetchProfile(hash);
       
       if (ipfsProfile && profile) {
         setProfile({
@@ -128,8 +128,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('📤 Uploading profile to IPFS...');
       
-      // Upload profile to IPFS
-      const newIpfsHash = await uploadProfileToLighthouse(profileData, walletAddress);
+      // Upload profile to IPFS via API route
+      const newIpfsHash = await uploadProfile(profileData, walletAddress);
       console.log('✅ Profile uploaded:', newIpfsHash);
 
       // Update on-chain registry
@@ -161,7 +161,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const uploadAvatar = async (file: File): Promise<string> => {
     try {
       console.log('📤 Uploading avatar to IPFS...');
-      const avatarHash = await uploadAvatarToLighthouse(file);
+      const avatarHash = await uploadAvatarToIPFS(file);
       console.log('✅ Avatar uploaded:', avatarHash);
       return avatarHash;
     } catch (err: any) {
@@ -200,6 +200,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('🔄 Registering user:', address);
 
+      // First, register/fetch basic user profile from API
       const response = await fetch('/api/user/register', {
         method: 'POST',
         headers: {
@@ -215,11 +216,37 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       const data = await response.json();
 
       if (data.success) {
-        setProfile(data.data.user);
+        const basicProfile = data.data.user;
         console.log(
           data.data.isNewUser ? '✅ New user registered!' : '✅ User logged in!',
-          data.data.user.username
+          basicProfile.username
         );
+
+        // Now check if user has an on-chain IPFS profile
+        console.log('🔍 Checking for on-chain profile...');
+        const result = await refetchHash();
+        const onChainHash = result?.data as string;
+        
+        // If they have an IPFS hash, fetch that profile data
+        if (onChainHash && typeof onChainHash === 'string' && onChainHash.length > 0) {
+          console.log('📥 Loading IPFS profile:', onChainHash);
+          try {
+            const ipfsProfile = await fetchProfile(onChainHash);
+            setProfile({
+              ...basicProfile,
+              ipfsProfile,
+              ipfsHash: onChainHash,
+            });
+            console.log('✅ IPFS profile loaded!');
+          } catch (err) {
+            console.error('⚠️ Could not load IPFS profile:', err);
+            // Still set basic profile even if IPFS fails
+            setProfile(basicProfile);
+          }
+        } else {
+          console.log('ℹ️ No on-chain profile found (user hasn\'t saved profile yet)');
+          setProfile(basicProfile);
+        }
       } else {
         setError(data.error || 'Failed to register user');
       }

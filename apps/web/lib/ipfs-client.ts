@@ -12,11 +12,6 @@ export async function uploadImageToIPFS(
   fileName: string = 'bug-image.jpg'
 ): Promise<{ cid: string; url: string }> {
   try {
-    const apiKey = process.env.NEXT_PUBLIC_LIGHTHOUSE_API_KEY;
-    if (!apiKey) {
-      throw new Error('Lighthouse API key not configured');
-    }
-
     // Convert base64 to Blob
     const base64Data = base64Image.split(',')[1];
     const binaryString = atob(base64Data);
@@ -30,29 +25,26 @@ export async function uploadImageToIPFS(
     const formData = new FormData();
     formData.append('file', blob, fileName);
 
-    // Upload to Lighthouse
-    const response = await fetch('https://node.lighthouse.storage/api/v0/add', {
+    // Upload via our API route (server-side)
+    const response = await fetch('/api/upload-image', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-      },
       body: formData,
     });
 
     if (!response.ok) {
-      throw new Error(`Upload failed: ${response.statusText}`);
+      const errorData = await response.json().catch(() => ({ error: response.statusText }));
+      throw new Error(errorData.error || `Upload failed: ${response.statusText}`);
     }
 
     const data = await response.json();
-    const cid = data.Hash;
-    const url = `https://gateway.lighthouse.storage/ipfs/${cid}`;
+    const { cid, url } = data;
 
     console.log('✅ Image uploaded to IPFS:', { cid, url });
 
     return { cid, url };
   } catch (error) {
     console.error('❌ Error uploading image to IPFS:', error);
-    throw new Error('Failed to upload image to IPFS');
+    throw new Error(error instanceof Error ? error.message : 'Failed to upload image to IPFS');
   }
 }
 
@@ -67,42 +59,29 @@ export async function uploadMetadataToIPFS(
   fileName: string = 'metadata.json'
 ): Promise<{ cid: string; url: string }> {
   try {
-    const apiKey = process.env.NEXT_PUBLIC_LIGHTHOUSE_API_KEY;
-    if (!apiKey) {
-      throw new Error('Lighthouse API key not configured');
-    }
-
-    // Convert metadata to JSON blob
-    const jsonString = JSON.stringify(metadata, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
-
-    // Create FormData
-    const formData = new FormData();
-    formData.append('file', blob, fileName);
-
-    // Upload to Lighthouse
-    const response = await fetch('https://node.lighthouse.storage/api/v0/add', {
+    // Upload via our API route (server-side)
+    const response = await fetch('/api/upload-metadata', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
       },
-      body: formData,
+      body: JSON.stringify({ metadata, fileName }),
     });
 
     if (!response.ok) {
-      throw new Error(`Upload failed: ${response.statusText}`);
+      const errorData = await response.json().catch(() => ({ error: response.statusText }));
+      throw new Error(errorData.error || `Upload failed: ${response.statusText}`);
     }
 
     const data = await response.json();
-    const cid = data.Hash;
-    const url = `https://gateway.lighthouse.storage/ipfs/${cid}`;
+    const { cid, url } = data;
 
     console.log('✅ Metadata uploaded to IPFS:', { cid, url });
 
     return { cid, url };
   } catch (error) {
     console.error('❌ Error uploading metadata to IPFS:', error);
-    throw new Error('Failed to upload metadata to IPFS');
+    throw new Error(error instanceof Error ? error.message : 'Failed to upload metadata to IPFS');
   }
 }
 

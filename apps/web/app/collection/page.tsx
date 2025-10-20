@@ -20,10 +20,9 @@ import {
   AlertTriangle,
   Shield,
   Sparkles,
-  Info,
-  X
+  Info
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useUser } from "@/lib/useUser";
 import { ethers } from "ethers";
@@ -87,69 +86,120 @@ export default function CollectionPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [claiming, setClaiming] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (isAuthenticated && walletAddress) {
-      loadUploads();
-    }
-  }, [isAuthenticated, walletAddress]);
-
-  const loadUploads = async () => {
+  const loadUploads = useCallback(async () => {
     if (!walletAddress) return;
 
     try {
       setLoading(true);
-      const response = await fetch(`/api/uploads?address=${walletAddress}`, {
-        cache: 'no-store', // Always get fresh data
-      });
-      const data = await response.json();
-
-      if (data.success) {
-        const uploadsWithStatus = await Promise.all(
-          data.data.uploads.map(async (upload: UserUpload) => {
-            if (upload.submittedToBlockchain && upload.submissionId) {
-              const status = await getSubmissionStatus(upload.submissionId);
-              return { ...upload, blockchainStatus: status };
-            }
-            return upload;
-          })
-        );
-        setUploads(uploadsWithStatus);
+      
+      // Get submission IDs from blockchain for this user
+      const VOTING_CONTRACT_ADDRESS = "0xDD05459B4EAED043Ef5D12f45974D0f7468c28e9";
+      const idsRes = await fetch(
+        `/api/contract-read?address=${VOTING_CONTRACT_ADDRESS}&method=getSubmissionsBySubmitter&args=${walletAddress}`
+      );
+      const idsData = await idsRes.json();
+      
+      if (!idsData.result || idsData.result.length === 0) {
+        setUploads([]);
+        setLoading(false);
+        return;
       }
+
+      // Load each submission's data from blockchain
+      const submissionIds = idsData.result as bigint[];
+      const uploadsWithStatus = await Promise.all(
+        submissionIds.map(async (id: bigint) => {
+          try {
+            // Get submission details from blockchain
+            const subRes = await fetch(
+              `/api/contract-read?address=${VOTING_CONTRACT_ADDRESS}&method=submissions&args=${id.toString()}`
+            );
+            const subData = await subRes.json();
+            
+            if (!subData.result) return null;
+            
+            const sub = subData.result;
+            
+            // Fetch IPFS metadata
+            let metadata: {
+              location?: {
+                state: string;
+                country: string;
+                latitude: number;
+                longitude: number;
+              };
+              bugInfo?: UserUpload['bugInfo'];
+              image?: string;
+            } = {};
+            let imageUrl = "/placeholder-bug.jpg";
+            
+            if (sub.ipfsHash) {
+              try {
+                const metaRes = await fetch(
+                  `https://gateway.lighthouse.storage/ipfs/${sub.ipfsHash}`
+                );
+                metadata = await metaRes.json();
+                
+                if (metadata.image) {
+                  imageUrl = metadata.image.replace(
+                    "ipfs://",
+                    "https://gateway.lighthouse.storage/ipfs/"
+                  );
+                }
+              } catch (e) {
+                console.error("Failed to load IPFS metadata:", e);
+              }
+            }
+
+            // Construct UserUpload from blockchain + IPFS data
+            return {
+              id: id.toString(),
+              imageCid: sub.ipfsHash || "",
+              metadataCid: sub.ipfsHash || "",
+              imageUrl,
+              metadataUrl: sub.ipfsHash
+                ? `https://gateway.lighthouse.storage/ipfs/${sub.ipfsHash}`
+                : "",
+              discoverer: walletAddress,
+              timestamp: Number(sub.createdAt) * 1000, // Convert to ms
+              location: metadata.location || {
+                state: "Unknown",
+                country: "Unknown",
+                latitude: 0,
+                longitude: 0,
+              },
+              bugInfo: metadata.bugInfo,
+              submittedToBlockchain: true,
+              submissionId: Number(id),
+              blockchainStatus: {
+                resolved: sub.resolved,
+                approved: sub.approved,
+                nftClaimed: sub.nftClaimed,
+                votesFor: Number(sub.votesFor),
+                votesAgainst: Number(sub.votesAgainst),
+              },
+            } as UserUpload;
+          } catch (error) {
+            console.error(`Failed to load submission ${id}:`, error);
+            return null;
+          }
+        })
+      );
+
+      setUploads(uploadsWithStatus.filter(Boolean) as UserUpload[]);
     } catch (error) {
-      console.error('Failed to load uploads:', error);
+      console.error("Failed to load uploads from blockchain:", error);
+      setUploads([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [walletAddress]);
 
-  const getSubmissionStatus = async (submissionId: number) => {
-    try {
-      if (!window.ethereum) return null;
-
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const bugVotingAddress = process.env.NEXT_PUBLIC_BUG_VOTING_ADDRESS;
-      
-      if (!bugVotingAddress) return null;
-
-      const bugVotingABI = [
-        "function getSubmission(uint256 submissionId) external view returns (address submitter, string memory ipfsHash, uint256 createdAt, uint256 votesFor, uint256 votesAgainst, bool resolved, bool approved, bool nftClaimed, uint256 nftTokenId)",
-      ];
-
-      const bugVoting = new ethers.Contract(bugVotingAddress, bugVotingABI, provider);
-      const result = await bugVoting.getSubmission(submissionId);
-
-      return {
-        resolved: result[5],
-        approved: result[6],
-        nftClaimed: result[7],
-        votesFor: Number(result[3]),
-        votesAgainst: Number(result[4]),
-      };
-    } catch (error) {
-      console.error('Failed to get submission status:', error);
-      return null;
+  useEffect(() => {
+    if (isAuthenticated && walletAddress) {
+      loadUploads();
     }
-  };
+  }, [isAuthenticated, walletAddress, loadUploads]);
 
   const submitToBlockchain = async (upload: UserUpload) => {
     if (!window.ethereum || !walletAddress) return;
@@ -183,25 +233,15 @@ export default function CollectionPage() {
         parseInt(receipt.logs[0].topics[1], 16) : 
         undefined;
 
-      // Update upload status
-      await fetch('/api/uploads', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          uploadId: upload.id,
-          transactionHash: receipt.hash,
-          submissionId: submissionId,
-        }),
-      });
+      console.log('✅ Submitted to blockchain!', receipt.hash, 'Submission ID:', submissionId);
+      alert(`Bug submitted for community voting!\n\nTransaction: ${receipt.hash}\nSubmission ID: ${submissionId}`);
 
-      console.log('✅ Submitted to blockchain!', receipt.hash);
-      alert(`Bug submitted for community voting!\n\nTransaction: ${receipt.hash}`);
-
-      // Reload uploads
+      // Reload uploads from blockchain
       await loadUploads();
-    } catch (error: any) {
-      console.error('Failed to submit:', error);
-      alert(`Failed to submit: ${error.message}`);
+    } catch (error) {
+      const err = error as Error;
+      console.error('Failed to submit:', err);
+      alert(`Failed to submit: ${err.message}`);
     } finally {
       setSubmitting(null);
     }
@@ -239,9 +279,10 @@ export default function CollectionPage() {
 
       // Reload uploads to update status
       await loadUploads();
-    } catch (error: any) {
-      console.error('Failed to claim NFT:', error);
-      alert(`Failed to claim NFT: ${error.message}`);
+    } catch (error) {
+      const err = error as Error;
+      console.error('Failed to claim NFT:', err);
+      alert(`Failed to claim NFT: ${err.message}`);
     } finally {
       setClaiming(null);
     }

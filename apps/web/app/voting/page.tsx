@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,19 +11,29 @@ import { useWallet } from "@/lib/useWallet";
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 
 interface BugSubmission {
-  id: number;
+  id: bigint;
   submitter: string;
   ipfsHash: string;
-  createdAt: number;
-  votesFor: number;
-  votesAgainst: number;
+  createdAt: bigint;
+  votesFor: bigint;
+  votesAgainst: bigint;
   resolved: boolean;
   approved: boolean;
   nftClaimed: boolean;
-  nftTokenId: number;
-  imageUrl?: string;
-  metadata?: any;
-  hasVoted?: boolean;
+  nftTokenId: bigint;
+  rarity: number;
+  imageUrl: string;
+  metadata: {
+    bugInfo?: {
+      commonName?: string;
+      scientificName?: string;
+    };
+    location?: {
+      state?: string;
+      country?: string;
+    };
+  } | null;
+  hasVoted: boolean;
 }
 
 const BUG_VOTING_V2_ABI = [
@@ -98,24 +108,7 @@ export default function VotingPage() {
     functionName: "submissionCount",
   });
 
-  useEffect(() => {
-    if (submissionCount) {
-      loadSubmissions();
-    } else {
-      setIsLoading(false);
-    }
-  }, [submissionCount, address]);
-
-  useEffect(() => {
-    if (isTxSuccess) {
-      setTimeout(() => {
-        refetchCount();
-        loadSubmissions();
-      }, 2000);
-    }
-  }, [isTxSuccess]);
-
-  const loadSubmissions = async () => {
+  const loadSubmissions = useCallback(async () => {
     if (!submissionCount) return;
     setIsLoading(true);
     const count = Number(submissionCount);
@@ -123,7 +116,7 @@ export default function VotingPage() {
 
     for (let i = 1; i <= count; i++) {
       try {
-        const res = await fetch(`/api/contract-read?address=$${VOTING_CONTRACT_ADDRESS}&method=submissions&args=$${i}`);
+        const res = await fetch(`/api/contract-read?address=${VOTING_CONTRACT_ADDRESS}&method=submissions&args=${i}`);
         const data = await res.json();
         if (data.result) {
           const sub = data.result;
@@ -131,7 +124,7 @@ export default function VotingPage() {
           let metadata = null;
           if (sub.ipfsHash) {
             try {
-              const metaRes = await fetch(`https://gateway.lighthouse.storage/ipfs/$${sub.ipfsHash}`);
+              const metaRes = await fetch(`https://gateway.lighthouse.storage/ipfs/${sub.ipfsHash}`);
               metadata = await metaRes.json();
               if (metadata.image) {
                 imageUrl = metadata.image.replace("ipfs://", "https://gateway.lighthouse.storage/ipfs/");
@@ -140,43 +133,61 @@ export default function VotingPage() {
           }
           let hasVoted = false;
           if (address) {
-            const voteRes = await fetch(`/api/contract-read?address=$${VOTING_CONTRACT_ADDRESS}&method=hasVoted&args=$${i},$${address}`);
+            const voteRes = await fetch(`/api/contract-read?address=${VOTING_CONTRACT_ADDRESS}&method=hasVoted&args=${i},${address}`);
             const voteData = await voteRes.json();
             hasVoted = voteData.result || false;
           }
           loaded.push({
-            id: Number(sub.id),
+            id: sub.id,
             submitter: sub.submitter,
             ipfsHash: sub.ipfsHash,
-            createdAt: Number(sub.createdAt),
-            votesFor: Number(sub.votesFor),
-            votesAgainst: Number(sub.votesAgainst),
+            createdAt: sub.createdAt,
+            votesFor: sub.votesFor,
+            votesAgainst: sub.votesAgainst,
             resolved: sub.resolved,
             approved: sub.approved,
             nftClaimed: sub.nftClaimed,
-            nftTokenId: Number(sub.nftTokenId),
+            nftTokenId: sub.nftTokenId,
+            rarity: sub.rarity,
             imageUrl,
             metadata,
             hasVoted,
           });
         }
-      } catch (e) { console.error(`Error loading submission $${i}:`, e); }
+      } catch (e) { console.error(`Error loading submission ${i}:`, e); }
     }
     setSubmissions(loaded.reverse());
     setIsLoading(false);
-  };
+  }, [submissionCount, address]);
 
-  const handleVote = (submissionId: number, voteFor: boolean) => {
+  useEffect(() => {
+    if (submissionCount) {
+      loadSubmissions();
+    } else {
+      setIsLoading(false);
+    }
+  }, [submissionCount, address, loadSubmissions]);
+
+  useEffect(() => {
+    if (isTxSuccess) {
+      setTimeout(() => {
+        refetchCount();
+        loadSubmissions();
+      }, 2000);
+    }
+  }, [isTxSuccess, refetchCount, loadSubmissions]);
+
+  const handleVote = (submissionId: bigint, voteFor: boolean) => {
     if (!isConnected) { alert("Connect wallet!"); return; }
     writeContract({
       address: VOTING_CONTRACT_ADDRESS,
       abi: BUG_VOTING_V2_ABI,
       functionName: "vote",
-      args: [BigInt(submissionId), voteFor],
+      args: [submissionId, voteFor],
     });
   };
 
-  const handleClaimNFT = (submissionId: number) => {
+  const handleClaimNFT = (submissionId: bigint) => {
     if (!isConnected) { alert("Connect wallet!"); return; }
     writeContract({
       address: VOTING_CONTRACT_ADDRESS,
@@ -206,7 +217,7 @@ export default function VotingPage() {
               <p className="text-sm text-muted-foreground">Verify bugs  Earn rewards</p>
             </div>
           </div>
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "all" | "mine" | "voted")}>
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="all">All ({submissions.length})</TabsTrigger>
               <TabsTrigger value="mine">Mine ({myCount})</TabsTrigger>
@@ -251,12 +262,12 @@ export default function VotingPage() {
 }
 
 function SubmissionCard({ submission: s, onVote, onClaimNFT, isProcessing, currentAddress }: {
-  submission: BugSubmission; onVote: (id: number, voteFor: boolean) => void; onClaimNFT: (id: number) => void; isProcessing: boolean; currentAddress?: string;
+  submission: BugSubmission; onVote: (id: bigint, voteFor: boolean) => void; onClaimNFT: (id: bigint) => void; isProcessing: boolean; currentAddress?: string;
 }) {
   const isMine = s.submitter.toLowerCase() === currentAddress?.toLowerCase();
   const canClaim = isMine && s.resolved && s.approved && !s.nftClaimed;
   const total = s.votesFor + s.votesAgainst;
-  const pct = total > 0 ? (s.votesFor / total) * 100 : 0;
+  const pct = total > BigInt(0) ? Number((s.votesFor * BigInt(100)) / total) : 0;
 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow">
@@ -269,24 +280,24 @@ function SubmissionCard({ submission: s, onVote, onClaimNFT, isProcessing, curre
       </div>
       <div className="p-4">
         <div className="flex justify-between text-sm text-muted-foreground mb-3">
-          <div className="flex gap-1"><Clock className="h-3.5 w-3.5" />{new Date(s.createdAt * 1000).toLocaleDateString()}</div>
+          <div className="flex gap-1"><Clock className="h-3.5 w-3.5" />{new Date(Number(s.createdAt) * 1000).toLocaleDateString()}</div>
           <span className="font-mono text-xs">{s.submitter.slice(0, 6)}...{s.submitter.slice(-4)}</span>
         </div>
-        {s.metadata && <div className="mb-3"><h3 className="font-semibold">{s.metadata.name || "Unknown"}</h3>
-          {s.metadata.scientificName && <p className="text-xs italic text-muted-foreground">{s.metadata.scientificName}</p>}</div>}
+        {s.metadata && <div className="mb-3"><h3 className="font-semibold">{s.metadata.bugInfo?.commonName || "Unknown"}</h3>
+          {s.metadata.bugInfo?.scientificName && <p className="text-xs italic text-muted-foreground">{s.metadata.bugInfo.scientificName}</p>}</div>}
         <div className="grid grid-cols-2 gap-3 mb-3">
           <div className="text-center p-2 bg-green-500/10 rounded">
-            <div className="flex justify-center gap-1 mb-1"><ThumbsUp className="h-4 w-4 text-green-500" /><span className="font-bold text-green-500">{s.votesFor}</span></div>
+            <div className="flex justify-center gap-1 mb-1"><ThumbsUp className="h-4 w-4 text-green-500" /><span className="font-bold text-green-500">{s.votesFor.toString()}</span></div>
             <p className="text-xs text-muted-foreground">Approve</p>
           </div>
           <div className="text-center p-2 bg-red-500/10 rounded">
-            <div className="flex justify-center gap-1 mb-1"><ThumbsDown className="h-4 w-4 text-red-500" /><span className="font-bold text-red-500">{s.votesAgainst}</span></div>
+            <div className="flex justify-center gap-1 mb-1"><ThumbsDown className="h-4 w-4 text-red-500" /><span className="font-bold text-red-500">{s.votesAgainst.toString()}</span></div>
             <p className="text-xs text-muted-foreground">Reject</p>
           </div>
         </div>
-        {total > 0 && <div className="mb-3">
+        {total > BigInt(0) && <div className="mb-3">
           <div className="flex justify-between text-xs mb-1">
-            <span className="text-muted-foreground">{total} vote{total > 1 ? "s" : ""}  Need 5</span>
+            <span className="text-muted-foreground">{total.toString()} vote{total > BigInt(1) ? "s" : ""}  Need 5</span>
             <span className="font-medium">{Math.round(pct)}% approve</span>
           </div>
           <div className="h-2 bg-muted rounded-full overflow-hidden">

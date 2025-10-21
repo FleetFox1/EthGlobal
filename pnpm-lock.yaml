@@ -11,6 +11,9 @@ importers:
       '@privy-io/react-auth':
         specifier: ^3.3.0
         version: 3.3.0(react-dom@19.2.0(react@18.3.1))(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1))(zod@3.25.76)
+      bls-eth-wasm:
+        specifier: ^1.4.0
+        version: 1.4.0
 
 packages:
 
@@ -447,6 +450,9 @@ packages:
 
   blakejs@1.2.1:
     resolution: {integrity: sha512-QXUSXI3QVc/gJME0dBpXrag1kbzOqCjCX8/b54ntNyW6sjtoqxqRk3LTmXzaJoh71zMsDCjM+47jS7XiwN/+fQ==}
+
+  bls-eth-wasm@1.4.0:
+    resolution: {integrity: sha512-9TJR3r3CUJQR97PU6zokV2kVA80H8g4tkVBnaf9HNH3lFMBZUKZETNCwIuN+exFLujdbt1K188rH3mnq8UgmKw==}
 
   bs58@5.0.0:
     resolution: {integrity: sha512-r+ihvQJvahgYT50JD05dyJNKlmmSlMoOGwn1lCcEzanPglg7TxYjioQUYehQ9mAR/+hOSd2jRc/Z2y5UxBymvQ==}
@@ -2417,6 +2423,8 @@ snapshots:
   big.js@6.2.2: {}
 
   blakejs@1.2.1: {}
+
+  bls-eth-wasm@1.4.0: {}
 
   bs58@5.0.0:
     dependencies:

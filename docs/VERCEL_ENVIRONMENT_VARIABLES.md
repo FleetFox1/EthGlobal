@@ -30,6 +30,8 @@ NEXT_PUBLIC_PRIVY_APP_ID=your_privy_app_id_here
 ```
 **Get yours at:** https://dashboard.privy.io
 
+**Note:** You only need the App ID (public). The secret key is NOT needed for client-side wallet auth.
+
 ---
 
 ### 4. Contract Addresses (Already Set)
@@ -94,9 +96,9 @@ After adding all variables:
 Use this to track what you've added:
 
 ### Must Add Manually:
-- [ ] `LIGHTHOUSE_API_KEY` - From your .env.local
-- [ ] `OPENAI_API_KEY` - From your .env.local
-- [ ] `NEXT_PUBLIC_PRIVY_APP_ID` - From your .env.local
+- [ ] `LIGHTHOUSE_API_KEY` - From your .env.local (server-side only)
+- [ ] `OPENAI_API_KEY` - From your .env.local (server-side only)
+- [ ] `NEXT_PUBLIC_PRIVY_APP_ID` - From your .env.local (public, no secret needed)
 - [ ] `NEXT_PUBLIC_BUG_VOTING_ADDRESS` = `0xDD05459B4EAED043Ef5D12f45974D0f7468c28e9`
 - [ ] `NEXT_PUBLIC_BUG_TOKEN_ADDRESS` = `0x9Be29fFC6e50BcC6d32bD38Dcd52e1b85C1c6a17`
 - [ ] `NEXT_PUBLIC_BUG_NFT_ADDRESS` = `0x73ebEC63AB4C77bCf1cDae2e2e99F24e2ADA2E58`

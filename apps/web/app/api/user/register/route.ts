@@ -129,14 +129,29 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const user = userProfiles.get(address.toLowerCase());
+    const walletAddress = address.toLowerCase();
 
-    if (!user) {
+    // Fetch from database
+    const result = await sql`
+      SELECT * FROM users WHERE wallet_address = ${walletAddress}
+    `;
+
+    if (result.rows.length === 0) {
       return NextResponse.json(
         { error: "User not found" },
         { status: 404 }
       );
     }
+
+    const dbUser = result.rows[0];
+    const user: UserProfile = {
+      address: dbUser.wallet_address,
+      username: dbUser.username,
+      email: undefined, // Email not stored in DB schema
+      createdAt: new Date(dbUser.created_at).getTime(),
+      lastLogin: new Date(dbUser.updated_at).getTime(),
+      privyUserId: undefined,
+    };
 
     return NextResponse.json({
       success: true,

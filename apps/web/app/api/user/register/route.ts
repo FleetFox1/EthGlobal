@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { sql } from "@/lib/db/client";
 
 /**
  * POST /api/user/register
@@ -10,10 +11,6 @@ import { NextRequest, NextResponse } from "next/server";
  * - username?: string - Optional display name
  * - email?: string - Optional email from Privy
  */
-
-// Simple in-memory storage for demo (replace with real DB for production)
-// For hackathon, you might use: Vercel KV, Supabase, or MongoDB
-const userProfiles = new Map<string, UserProfile>();
 
 interface UserProfile {
   address: string;
@@ -39,21 +36,35 @@ export async function POST(request: NextRequest) {
 
     console.log("👤 Registering/updating user:", address);
 
-    // Check if user exists
-    const existingUser = userProfiles.get(address.toLowerCase());
+    const walletAddress = address.toLowerCase();
     const now = Date.now();
+    const defaultUsername = username || `User${address.slice(2, 8)}`;
+
+    // Check if user exists
+    const existingResult = await sql`
+      SELECT * FROM users WHERE wallet_address = ${walletAddress}
+    `;
+
+    const existingUser = existingResult.rows[0];
 
     if (existingUser) {
       // Update existing user
-      const updatedUser: UserProfile = {
-        ...existingUser,
-        lastLogin: now,
-        username: username || existingUser.username,
-        email: email || existingUser.email,
-        privyUserId: privyUserId || existingUser.privyUserId,
-      };
+      await sql`
+        UPDATE users
+        SET 
+          username = ${username || existingUser.username},
+          updated_at = NOW()
+        WHERE wallet_address = ${walletAddress}
+      `;
 
-      userProfiles.set(address.toLowerCase(), updatedUser);
+      const updatedUser: UserProfile = {
+        address: walletAddress,
+        username: username || existingUser.username,
+        email: email,
+        createdAt: new Date(existingUser.created_at).getTime(),
+        lastLogin: now,
+        privyUserId: privyUserId,
+      };
 
       return NextResponse.json({
         success: true,
@@ -64,16 +75,19 @@ export async function POST(request: NextRequest) {
       });
     } else {
       // Create new user
+      await sql`
+        INSERT INTO users (wallet_address, username)
+        VALUES (${walletAddress}, ${defaultUsername})
+      `;
+
       const newUser: UserProfile = {
-        address: address.toLowerCase(),
-        username: username || `User${address.slice(2, 8)}`,
+        address: walletAddress,
+        username: defaultUsername,
         email: email,
         createdAt: now,
         lastLogin: now,
         privyUserId: privyUserId,
       };
-
-      userProfiles.set(address.toLowerCase(), newUser);
 
       console.log("✅ New user created:", newUser.username);
 

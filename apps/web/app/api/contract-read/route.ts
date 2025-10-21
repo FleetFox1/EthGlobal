@@ -111,7 +111,14 @@ export async function GET(request: NextRequest) {
       args: args as readonly unknown[],
     });
 
-    return NextResponse.json({ result });
+    // Convert BigInt values to strings for JSON serialization
+    const serializedResult = JSON.parse(
+      JSON.stringify(result, (_, value) =>
+        typeof value === "bigint" ? value.toString() : value
+      )
+    );
+
+    return NextResponse.json({ result: serializedResult });
   } catch (error) {
     const err = error as Error;
     console.error("Contract read error:", err);

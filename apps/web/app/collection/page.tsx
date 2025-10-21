@@ -116,9 +116,26 @@ export default function CollectionPage() {
             );
             const subData = await subRes.json();
             
+            console.log(`📦 Submission ${id} raw data:`, subData.result);
+            
             if (!subData.result) return null;
             
-            const sub = subData.result;
+            // Parse the submission array/tuple from Solidity
+            // Submission struct: [id, submitter, ipfsHash, createdAt, votesFor, votesAgainst, resolved, approved, nftClaimed, nftTokenId, rarity]
+            const subArray = subData.result;
+            const sub = {
+              id: subArray[0],
+              submitter: subArray[1],
+              ipfsHash: subArray[2],
+              createdAt: subArray[3],
+              votesFor: subArray[4],
+              votesAgainst: subArray[5],
+              resolved: subArray[6],
+              approved: subArray[7],
+              nftClaimed: subArray[8],
+              nftTokenId: subArray[9],
+              rarity: subArray[10],
+            };
             
             // Fetch IPFS metadata
             let metadata: {
@@ -187,9 +204,52 @@ export default function CollectionPage() {
       );
 
       setUploads(uploadsWithStatus.filter(Boolean) as UserUpload[]);
+      
+      // Also load local uploads that haven't been submitted to blockchain
+      try {
+        const localRes = await fetch(`/api/uploads?address=${walletAddress}`);
+        const localData = await localRes.json();
+        
+        if (localData.uploads && localData.uploads.length > 0) {
+          // Filter out uploads that are already on blockchain
+          const blockchainSubmissionIds = new Set(
+            uploadsWithStatus.map(u => u?.submissionId).filter(Boolean)
+          );
+          
+          const localUploads = localData.uploads
+            .filter((u: any) => !blockchainSubmissionIds.has(u.submissionId))
+            .map((u: any) => ({
+              ...u,
+              submittedToBlockchain: false, // Explicitly mark as not on blockchain
+            }));
+          
+          console.log(`📦 Found ${localUploads.length} local uploads not yet on blockchain`);
+          
+          // Combine blockchain and local uploads
+          setUploads([...uploadsWithStatus.filter(Boolean) as UserUpload[], ...localUploads]);
+        }
+      } catch (localError) {
+        console.error("Failed to load local uploads:", localError);
+        // Still use blockchain uploads even if local fails
+      }
     } catch (error) {
       console.error("Failed to load uploads from blockchain:", error);
-      setUploads([]);
+      
+      // If blockchain fails, try to load local uploads only
+      try {
+        const localRes = await fetch(`/api/uploads?address=${walletAddress}`);
+        const localData = await localRes.json();
+        
+        if (localData.uploads) {
+          setUploads(localData.uploads.map((u: any) => ({
+            ...u,
+            submittedToBlockchain: false,
+          })));
+        }
+      } catch (localError) {
+        console.error("Failed to load local uploads:", localError);
+        setUploads([]);
+      }
     } finally {
       setLoading(false);
     }

@@ -29,9 +29,8 @@ export async function POST(request: NextRequest) {
       const uploadFormData = new FormData();
       uploadFormData.append('file', file);
       
-      // Try Lighthouse API - using the upload endpoint
-      // Alternative endpoints: node.lighthouse.storage or api.lighthouse.storage
-      const response = await fetch('https://api.lighthouse.storage/api/v0/add', {
+      // Lighthouse correct upload endpoint
+      const response = await fetch('https://node.lighthouse.storage/api/v0/add', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
@@ -48,6 +47,7 @@ export async function POST(request: NextRequest) {
       const result = await response.json();
       console.log('📦 Lighthouse response:', result);
       
+      // Lighthouse returns Hash and Name
       const cid = result.Hash;
       const url = `https://gateway.lighthouse.storage/ipfs/${cid}`;
 
@@ -57,10 +57,11 @@ export async function POST(request: NextRequest) {
     } catch (uploadError) {
       console.error('❌ Lighthouse upload failed:', uploadError);
       
-      // If it's a timeout, provide helpful error message
-      if (uploadError instanceof Error && uploadError.message.includes('timeout')) {
+      // If it's a timeout or connection error, provide helpful error message
+      if (uploadError instanceof Error && 
+          (uploadError.message.includes('timeout') || uploadError.message.includes('fetch failed'))) {
         return NextResponse.json(
-          { error: 'Upload timeout - Lighthouse API is slow or unreachable. Please try again.' },
+          { error: 'Upload timeout - Lighthouse API is unreachable from Vercel. Consider using a different IPFS provider.' },
           { status: 504 }
         );
       }

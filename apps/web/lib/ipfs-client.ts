@@ -1,17 +1,27 @@
 // Browser-compatible IPFS upload using Lighthouse SDK
 // This runs in the browser, not on the server
+// Client-side upload is more secure and faster for decentralized apps
 
 /**
- * Upload an image from base64 data URL to IPFS using Lighthouse
+ * Upload an image from base64 data URL to IPFS using Lighthouse (client-side)
  * @param base64Image - Base64 data URL (e.g., from canvas.toDataURL())
  * @param fileName - Name for the file
  * @returns Object with IPFS CID and gateway URL
  */
 export async function uploadImageToIPFS(
   base64Image: string,
-  fileName: string = 'bug-image.jpg'
+  fileName: string = `bug-image-${Date.now()}.jpg`
 ): Promise<{ cid: string; url: string }> {
   try {
+    console.log('📤 Starting client-side Lighthouse upload...');
+    
+    // Get Lighthouse API key from server
+    const keyResponse = await fetch('/api/upload-image');
+    if (!keyResponse.ok) {
+      throw new Error('Failed to get Lighthouse API key');
+    }
+    const { apiKey } = await keyResponse.json();
+
     // Convert base64 to Blob
     const base64Data = base64Image.split(',')[1];
     const binaryString = atob(base64Data);
@@ -21,23 +31,31 @@ export async function uploadImageToIPFS(
     }
     const blob = new Blob([bytes], { type: 'image/jpeg' });
 
-    // Create FormData for upload
-    const formData = new FormData();
-    formData.append('file', blob, fileName);
+    // Create File object for Lighthouse
+    const file = new File([blob], fileName, { type: 'image/jpeg' });
 
-    // Upload via our API route (server-side)
-    const response = await fetch('/api/upload-image', {
+    // Upload directly to Lighthouse from browser
+    console.log('🚀 Uploading to Lighthouse...');
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch('https://node.lighthouse.storage/api/v0/add', {
       method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+      },
       body: formData,
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: response.statusText }));
-      throw new Error(errorData.error || `Upload failed: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Lighthouse error:', errorText);
+      throw new Error(`Lighthouse upload failed: ${response.status}`);
     }
 
-    const data = await response.json();
-    const { cid, url } = data;
+    const result = await response.json();
+    const cid = result.Hash;
+    const url = `https://gateway.lighthouse.storage/ipfs/${cid}`;
 
     console.log('✅ Image uploaded to IPFS:', { cid, url });
 

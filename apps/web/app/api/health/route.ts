@@ -22,12 +22,12 @@ export async function GET() {
     };
   }
 
-  // Check Lighthouse
+  // Check Pinata (replaced Lighthouse)
   try {
-    require.resolve('@lighthouse-web3/sdk');
-    diagnostics.checks['@lighthouse-web3/sdk'] = { available: true };
+    require.resolve('pinata');
+    diagnostics.checks['pinata'] = { available: true };
   } catch (error: any) {
-    diagnostics.checks['@lighthouse-web3/sdk'] = { 
+    diagnostics.checks['pinata'] = { 
       available: false, 
       error: error.message 
     };
@@ -45,8 +45,8 @@ export async function GET() {
   }
 
   // Check environment variables (without revealing values)
-  diagnostics.checks['LIGHTHOUSE_API_KEY'] = { 
-    available: !!process.env.LIGHTHOUSE_API_KEY 
+  diagnostics.checks['PINATA_JWT'] = { 
+    available: !!process.env.PINATA_JWT 
   };
   diagnostics.checks['NEXT_PUBLIC_PRIVY_APP_ID'] = { 
     available: !!process.env.NEXT_PUBLIC_PRIVY_APP_ID 

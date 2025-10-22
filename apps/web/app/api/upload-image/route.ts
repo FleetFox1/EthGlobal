@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import lighthouse from '@lighthouse-web3/sdk';
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,20 +19,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Lighthouse API key not configured' }, { status: 500 });
     }
 
-    // Convert File to Buffer
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
     const fileName = `bug-${Date.now()}-${file.name}`;
     
     try {
-      // Upload buffer directly to Lighthouse (no file system needed)
-      console.log('📤 Uploading to Lighthouse:', fileName);
+      // Upload directly to Lighthouse HTTP API (no SDK dependencies)
+      console.log('📤 Uploading to Lighthouse API:', fileName);
       
-      // uploadBuffer signature: (buffer, apiKey, dealParameters?)
-      const response = await lighthouse.uploadBuffer(buffer, apiKey);
+      // Create form data for Lighthouse API
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', file);
       
-      const cid = response.data.Hash;
+      // Call Lighthouse HTTP API directly
+      const response = await fetch('https://node.lighthouse.storage/api/v0/add', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: uploadFormData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Lighthouse API error: ${response.status} ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      const cid = result.Hash;
       const url = `https://gateway.lighthouse.storage/ipfs/${cid}`;
 
       console.log('✅ Image uploaded:', { cid, url });

@@ -8,11 +8,12 @@ You need to add these environment variables to your Vercel project dashboard:
 
 ## 📋 Required Environment Variables
 
-### 1. Lighthouse IPFS Storage
+### 1. Pinata IPFS Storage
 ```
-LIGHTHOUSE_API_KEY=your_lighthouse_api_key_here
+PINATA_JWT=your_pinata_jwt_token_here
 ```
-**Get yours at:** https://lighthouse.storage
+**Get yours at:** https://app.pinata.cloud (Account → API Keys → New Key → Generate)
+**Note:** Pinata is serverless-compatible (unlike Lighthouse which requires fs-extra)
 
 ---
 

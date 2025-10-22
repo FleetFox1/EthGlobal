@@ -1,9 +1,9 @@
-// Browser-compatible IPFS upload using Lighthouse SDK
-// This runs in the browser, not on the server
-// Client-side upload is more secure and faster for decentralized apps
+// Browser-compatible IPFS upload using Pinata
+// Pinata is serverless-friendly and widely used in Web3 projects
+// Uploads through our API endpoint for better security
 
 /**
- * Upload an image from base64 data URL to IPFS using Lighthouse (client-side)
+ * Upload an image from base64 data URL to IPFS using Pinata
  * @param base64Image - Base64 data URL (e.g., from canvas.toDataURL())
  * @param fileName - Name for the file
  * @returns Object with IPFS CID and gateway URL
@@ -13,14 +13,7 @@ export async function uploadImageToIPFS(
   fileName: string = `bug-image-${Date.now()}.jpg`
 ): Promise<{ cid: string; url: string }> {
   try {
-    console.log('📤 Starting client-side Lighthouse upload...');
-    
-    // Get Lighthouse API key from server
-    const keyResponse = await fetch('/api/upload-image');
-    if (!keyResponse.ok) {
-      throw new Error('Failed to get Lighthouse API key');
-    }
-    const { apiKey } = await keyResponse.json();
+    console.log('📤 Starting Pinata upload...');
 
     // Convert base64 to Blob
     const base64Data = base64Image.split(',')[1];
@@ -31,61 +24,31 @@ export async function uploadImageToIPFS(
     }
     const blob = new Blob([bytes], { type: 'image/jpeg' });
 
-    // Create File object for Lighthouse
+    // Create File object
     const file = new File([blob], fileName, { type: 'image/jpeg' });
 
-    // Upload directly to Lighthouse from browser
-    console.log('🚀 Uploading to Lighthouse...');
+    // Upload via our API endpoint (Pinata on server)
+    console.log('🚀 Uploading to Pinata/IPFS...');
     
-    try {
-      // Try direct upload first (might have CORS issues)
-      const formData = new FormData();
-      formData.append('file', file);
+    const formData = new FormData();
+    formData.append('file', file);
 
-      const response = await fetch('https://node.lighthouse.storage/api/v0/add', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: formData,
-      });
+    const response = await fetch('/api/upload-image', {
+      method: 'POST',
+      body: formData,
+    });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Lighthouse error:', errorText);
-        throw new Error(`Lighthouse upload failed: ${response.status}`);
-      }
-
-      const result = await response.json();
-      const cid = result.Hash;
-      const url = `https://gateway.lighthouse.storage/ipfs/${cid}`;
-
-      console.log('✅ Image uploaded to IPFS:', { cid, url });
-
-      return { cid, url };
-    } catch (directError) {
-      // If direct upload fails (CORS or network), fall back to proxy through our API
-      console.warn('Direct upload failed, using server proxy...', directError);
-      
-      const proxyFormData = new FormData();
-      proxyFormData.append('file', file);
-      proxyFormData.append('apiKey', apiKey);
-
-      const proxyResponse = await fetch('/api/lighthouse-proxy', {
-        method: 'POST',
-        body: proxyFormData,
-      });
-
-      if (!proxyResponse.ok) {
-        const errorData = await proxyResponse.json().catch(() => ({ error: proxyResponse.statusText }));
-        throw new Error(errorData.error || `Proxy upload failed: ${proxyResponse.statusText}`);
-      }
-
-      const data = await proxyResponse.json();
-      console.log('✅ Image uploaded via proxy:', data);
-      
-      return { cid: data.cid, url: data.url };
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: response.statusText }));
+      throw new Error(errorData.error || `Upload failed: ${response.status}`);
     }
+
+    const result = await response.json();
+    const { cid, url } = result;
+
+    console.log('✅ Image uploaded to IPFS:', { cid, url });
+
+    return { cid, url };
   } catch (error) {
     console.error('❌ Error uploading image to IPFS:', error);
     throw new Error(error instanceof Error ? error.message : 'Failed to upload image to IPFS');

@@ -36,30 +36,56 @@ export async function uploadImageToIPFS(
 
     // Upload directly to Lighthouse from browser
     console.log('🚀 Uploading to Lighthouse...');
-    const formData = new FormData();
-    formData.append('file', file);
+    
+    try {
+      // Try direct upload first (might have CORS issues)
+      const formData = new FormData();
+      formData.append('file', file);
 
-    const response = await fetch('https://node.lighthouse.storage/api/v0/add', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: formData,
-    });
+      const response = await fetch('https://node.lighthouse.storage/api/v0/add', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: formData,
+      });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Lighthouse error:', errorText);
-      throw new Error(`Lighthouse upload failed: ${response.status}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Lighthouse error:', errorText);
+        throw new Error(`Lighthouse upload failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      const cid = result.Hash;
+      const url = `https://gateway.lighthouse.storage/ipfs/${cid}`;
+
+      console.log('✅ Image uploaded to IPFS:', { cid, url });
+
+      return { cid, url };
+    } catch (directError) {
+      // If direct upload fails (CORS or network), fall back to proxy through our API
+      console.warn('Direct upload failed, using server proxy...', directError);
+      
+      const proxyFormData = new FormData();
+      proxyFormData.append('file', file);
+      proxyFormData.append('apiKey', apiKey);
+
+      const proxyResponse = await fetch('/api/lighthouse-proxy', {
+        method: 'POST',
+        body: proxyFormData,
+      });
+
+      if (!proxyResponse.ok) {
+        const errorData = await proxyResponse.json().catch(() => ({ error: proxyResponse.statusText }));
+        throw new Error(errorData.error || `Proxy upload failed: ${proxyResponse.statusText}`);
+      }
+
+      const data = await proxyResponse.json();
+      console.log('✅ Image uploaded via proxy:', data);
+      
+      return { cid: data.cid, url: data.url };
     }
-
-    const result = await response.json();
-    const cid = result.Hash;
-    const url = `https://gateway.lighthouse.storage/ipfs/${cid}`;
-
-    console.log('✅ Image uploaded to IPFS:', { cid, url });
-
-    return { cid, url };
   } catch (error) {
     console.error('❌ Error uploading image to IPFS:', error);
     throw new Error(error instanceof Error ? error.message : 'Failed to upload image to IPFS');

@@ -37,8 +37,6 @@ export async function POST(request: NextRequest) {
           'Authorization': `Bearer ${apiKey}`,
         },
         body: uploadFormData,
-        // @ts-ignore - Add timeout
-        signal: AbortSignal.timeout(30000), // 30 second timeout
       });
 
       if (!response.ok) {

@@ -24,23 +24,15 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Write to temp file
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const fs = require('fs');
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const path = require('path');
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const os = require('os');
-    const tmpDir = os.tmpdir();
+    // Create a Blob/File-like object for Lighthouse uploadBuffer
     const fileName = `bug-${Date.now()}-${file.name}`;
-    const filePath = path.join(tmpDir, fileName);
-
-    fs.writeFileSync(filePath, buffer);
-
+    
     try {
-      // Upload to Lighthouse
+      // Upload buffer directly to Lighthouse (no file system needed)
       console.log('📤 Uploading to Lighthouse:', fileName);
-      const response = await lighthouse.upload(filePath, apiKey);
+      
+      // Use uploadBuffer instead of upload to avoid file system
+      const response = await lighthouse.uploadBuffer(buffer, apiKey, fileName);
       
       const cid = response.data.Hash;
       const url = `https://gateway.lighthouse.storage/ipfs/${cid}`;
@@ -48,11 +40,9 @@ export async function POST(request: NextRequest) {
       console.log('✅ Image uploaded:', { cid, url });
 
       return NextResponse.json({ cid, url });
-    } finally {
-      // Clean up temp file
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
+    } catch (uploadError) {
+      console.error('❌ Lighthouse upload failed:', uploadError);
+      throw uploadError;
     }
   } catch (error) {
     console.error('❌ Upload error:', error);

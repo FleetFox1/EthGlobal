@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { uploadProfileToLighthouse } from '@/lib/lighthouse';
+import { PinataSDK } from 'pinata';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,10 +14,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Profile data required' }, { status: 400 });
     }
 
+    const pinataJwt = process.env.PINATA_JWT;
+    if (!pinataJwt) {
+      return NextResponse.json({ error: 'Pinata JWT not configured' }, { status: 500 });
+    }
+
     console.log('📤 Uploading profile to IPFS for:', walletAddress);
 
-    // Upload to IPFS via Lighthouse
-    const ipfsHash = await uploadProfileToLighthouse(profileData, walletAddress);
+    // Add metadata to profile
+    const profileWithMetadata = {
+      ...profileData,
+      metadata: {
+        ...profileData.metadata,
+        updatedAt: Date.now(),
+        version: "1.0",
+      },
+    };
+
+    // Convert to JSON and create File object
+    const jsonString = JSON.stringify(profileWithMetadata, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const file = new File([blob], `profile-${walletAddress}.json`, { type: 'application/json' });
+
+    // Upload to Pinata
+    const pinata = new PinataSDK({ pinataJwt });
+    const uploadResult = await pinata.upload.public.file(file);
+    const ipfsHash = uploadResult.cid;
 
     console.log('✅ Profile uploaded:', ipfsHash);
 

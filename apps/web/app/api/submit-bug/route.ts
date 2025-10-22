@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { uploadFileToIPFS, uploadBugMetadata } from "@/lib/lighthouse";
+import { PinataSDK } from "pinata";
 import { submitBugToVoting, BugRarity } from "@/lib/contracts";
 
 /**
@@ -52,28 +52,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const pinataJwt = process.env.PINATA_JWT;
+    if (!pinataJwt) {
+      return NextResponse.json({ error: 'Pinata JWT not configured' }, { status: 500 });
+    }
+
+    const pinata = new PinataSDK({ pinataJwt });
+
     console.log("📤 Starting bug submission process...");
     console.log("  User:", userAddress);
     console.log("  Species:", species);
     console.log("  Location:", location);
     console.log("  Rarity:", rarity);
 
-    // Step 1: Upload image to IPFS
-    console.log("1️⃣  Uploading image to IPFS...");
-    const imageBuffer = Buffer.from(await imageFile.arrayBuffer());
-    const { cid: imageCID, url: imageURL } = await uploadFileToIPFS(
-      imageBuffer,
-      imageFile.name
-    );
+    // Step 1: Upload image to IPFS via Pinata
+    console.log("1️⃣  Uploading image to IPFS via Pinata...");
+    const uploadResult = await pinata.upload.public.file(imageFile);
+    const imageCID = uploadResult.cid;
+    const imageURL = `https://gateway.pinata.cloud/ipfs/${imageCID}`;
 
     console.log("  ✅ Image CID:", imageCID);
 
     // Step 2: Create and upload metadata JSON
     console.log("2️⃣  Creating metadata JSON...");
-    const metadata = {
+    const nftMetadata = {
       name: `Bug #${Date.now()}`, // Temp name, will be updated after minting
       description: description,
-      image: imageCID,
+      image: `ipfs://${imageCID}`,
+      external_url: "https://bugdex.app",
       species: species,
       location: location,
       rarity: ["Common", "Uncommon", "Rare", "Epic", "Legendary"][rarity],
@@ -86,7 +92,13 @@ export async function POST(request: NextRequest) {
       ],
     };
 
-    const { cid: metadataCID, url: metadataURL } = await uploadBugMetadata(metadata);
+    // Upload metadata to Pinata
+    const metadataString = JSON.stringify(nftMetadata, null, 2);
+    const metadataBlob = new Blob([metadataString], { type: 'application/json' });
+    const metadataFile = new File([metadataBlob], 'bug-metadata.json', { type: 'application/json' });
+    const metadataUpload = await pinata.upload.public.file(metadataFile);
+    const metadataCID = metadataUpload.cid;
+    const metadataURL = `https://gateway.pinata.cloud/ipfs/${metadataCID}`;
     console.log("  ✅ Metadata CID:", metadataCID);
 
     // Step 3: Submit to voting contract

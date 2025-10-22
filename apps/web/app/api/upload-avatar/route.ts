@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { uploadAvatarToLighthouse } from '@/lib/lighthouse';
+import { PinataSDK } from 'pinata';
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,10 +20,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'File must be an image' }, { status: 400 });
     }
 
-    console.log('📤 Uploading avatar to IPFS...');
+    const pinataJwt = process.env.PINATA_JWT;
+    if (!pinataJwt) {
+      return NextResponse.json({ error: 'Pinata JWT not configured' }, { status: 500 });
+    }
 
-    // Upload via Lighthouse
-    const cid = await uploadAvatarToLighthouse(file);
+    console.log('📤 Uploading avatar to IPFS via Pinata...');
+
+    const pinata = new PinataSDK({ pinataJwt });
+    const uploadResult = await pinata.upload.public.file(file);
+    const cid = uploadResult.cid;
 
     console.log('✅ Avatar uploaded:', cid);
 

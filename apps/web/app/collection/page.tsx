@@ -210,11 +210,22 @@ export default function CollectionPage() {
         const localRes = await fetch(`/api/uploads?address=${walletAddress}`);
         const localData = await localRes.json();
         
+        console.log('🔍 DEBUG: Raw database response:', localData);
+        console.log('🔍 DEBUG: Number of uploads from DB:', localData.uploads?.length || 0);
+        
         if (localData.uploads && localData.uploads.length > 0) {
           // Filter out uploads that are already on blockchain
           const blockchainSubmissionIds = new Set(
             blockchainUploads.map(u => u?.submissionId).filter(Boolean)
           );
+          
+          console.log('🔍 DEBUG: Blockchain submission IDs:', Array.from(blockchainSubmissionIds));
+          console.log('🔍 DEBUG: Database uploads before filtering:', localData.uploads.map((u: any) => ({
+            id: u.id,
+            submissionId: u.submissionId,
+            imageCid: u.imageCid,
+            submitted: u.submittedToBlockchain
+          })));
           
           const localUploads = localData.uploads
             .filter((u: any) => !blockchainSubmissionIds.has(u.submissionId))
@@ -224,6 +235,7 @@ export default function CollectionPage() {
             }));
           
           console.log(`📦 Found ${localUploads.length} local uploads not yet on blockchain`);
+          console.log('🔍 DEBUG: Final combined uploads:', [...blockchainUploads, ...localUploads].length);
           
           // Combine blockchain and local uploads
           setUploads([...blockchainUploads, ...localUploads]);

@@ -99,16 +99,15 @@ export default function CollectionPage() {
       );
       const idsData = await idsRes.json();
       
-      if (!idsData.result || idsData.result.length === 0) {
-        setUploads([]);
-        setLoading(false);
-        return;
-      }
-
-      // Load each submission's data from blockchain
-      const submissionIds = idsData.result as bigint[];
-      const uploadsWithStatus = await Promise.all(
-        submissionIds.map(async (id: bigint) => {
+      let blockchainUploads: UserUpload[] = [];
+      
+      // Load blockchain submissions if any exist
+      // Load blockchain submissions if any exist
+      if (idsData.result && idsData.result.length > 0) {
+        // Load each submission's data from blockchain
+        const submissionIds = idsData.result as bigint[];
+        const uploadsWithStatus = await Promise.all(
+          submissionIds.map(async (id: bigint) => {
           try {
             // Get submission details from blockchain
             const subRes = await fetch(
@@ -203,9 +202,10 @@ export default function CollectionPage() {
         })
       );
 
-      setUploads(uploadsWithStatus.filter(Boolean) as UserUpload[]);
+        blockchainUploads = uploadsWithStatus.filter(Boolean) as UserUpload[];
+      }
       
-      // Also load local uploads that haven't been submitted to blockchain
+      // Always load database uploads (both submitted and not submitted)
       try {
         const localRes = await fetch(`/api/uploads?address=${walletAddress}`);
         const localData = await localRes.json();
@@ -213,7 +213,7 @@ export default function CollectionPage() {
         if (localData.uploads && localData.uploads.length > 0) {
           // Filter out uploads that are already on blockchain
           const blockchainSubmissionIds = new Set(
-            uploadsWithStatus.map(u => u?.submissionId).filter(Boolean)
+            blockchainUploads.map(u => u?.submissionId).filter(Boolean)
           );
           
           const localUploads = localData.uploads
@@ -226,11 +226,15 @@ export default function CollectionPage() {
           console.log(`📦 Found ${localUploads.length} local uploads not yet on blockchain`);
           
           // Combine blockchain and local uploads
-          setUploads([...uploadsWithStatus.filter(Boolean) as UserUpload[], ...localUploads]);
+          setUploads([...blockchainUploads, ...localUploads]);
+        } else {
+          // No database uploads, just show blockchain ones
+          setUploads(blockchainUploads);
         }
       } catch (localError) {
         console.error("Failed to load local uploads:", localError);
         // Still use blockchain uploads even if local fails
+        setUploads(blockchainUploads);
       }
     } catch (error) {
       console.error("Failed to load uploads from blockchain:", error);

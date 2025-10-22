@@ -24,15 +24,14 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Create a Blob/File-like object for Lighthouse uploadBuffer
     const fileName = `bug-${Date.now()}-${file.name}`;
     
     try {
       // Upload buffer directly to Lighthouse (no file system needed)
       console.log('📤 Uploading to Lighthouse:', fileName);
       
-      // Use uploadBuffer instead of upload to avoid file system
-      const response = await lighthouse.uploadBuffer(buffer, apiKey, fileName);
+      // uploadBuffer signature: (buffer, apiKey, dealParameters?)
+      const response = await lighthouse.uploadBuffer(buffer, apiKey);
       
       const cid = response.data.Hash;
       const url = `https://gateway.lighthouse.storage/ipfs/${cid}`;

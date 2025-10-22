@@ -211,23 +211,26 @@ export default function CollectionPage() {
         const localData = await localRes.json();
         
         console.log('🔍 DEBUG: Raw database response:', localData);
-        console.log('🔍 DEBUG: Number of uploads from DB:', localData.uploads?.length || 0);
         
-        if (localData.uploads && localData.uploads.length > 0) {
+        // API returns {success: true, data: {uploads: [...], count: X}}
+        const dbUploads = localData.data?.uploads || localData.uploads || [];
+        console.log('🔍 DEBUG: Number of uploads from DB:', dbUploads.length);
+        
+        if (dbUploads.length > 0) {
           // Filter out uploads that are already on blockchain
           const blockchainSubmissionIds = new Set(
             blockchainUploads.map(u => u?.submissionId).filter(Boolean)
           );
           
           console.log('🔍 DEBUG: Blockchain submission IDs:', Array.from(blockchainSubmissionIds));
-          console.log('🔍 DEBUG: Database uploads before filtering:', localData.uploads.map((u: any) => ({
+          console.log('🔍 DEBUG: Database uploads before filtering:', dbUploads.map((u: any) => ({
             id: u.id,
             submissionId: u.submissionId,
             imageCid: u.imageCid,
             submitted: u.submittedToBlockchain
           })));
           
-          const localUploads = localData.uploads
+          const localUploads = dbUploads
             .filter((u: any) => !blockchainSubmissionIds.has(u.submissionId))
             .map((u: any) => ({
               ...u,
@@ -256,8 +259,11 @@ export default function CollectionPage() {
         const localRes = await fetch(`/api/uploads?address=${walletAddress}`);
         const localData = await localRes.json();
         
-        if (localData.uploads) {
-          setUploads(localData.uploads.map((u: any) => ({
+        // API returns {success: true, data: {uploads: [...], count: X}}
+        const dbUploads = localData.data?.uploads || localData.uploads || [];
+        
+        if (dbUploads.length > 0) {
+          setUploads(dbUploads.map((u: any) => ({
             ...u,
             submittedToBlockchain: false,
           })));

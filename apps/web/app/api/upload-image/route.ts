@@ -29,20 +29,27 @@ export async function POST(request: NextRequest) {
       const uploadFormData = new FormData();
       uploadFormData.append('file', file);
       
-      // Call Lighthouse HTTP API directly
-      const response = await fetch('https://node.lighthouse.storage/api/v0/add', {
+      // Try Lighthouse API - using the upload endpoint
+      // Alternative endpoints: node.lighthouse.storage or api.lighthouse.storage
+      const response = await fetch('https://api.lighthouse.storage/api/v0/add', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
         },
         body: uploadFormData,
+        // @ts-ignore - Add timeout
+        signal: AbortSignal.timeout(30000), // 30 second timeout
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Lighthouse API error response:', errorText);
         throw new Error(`Lighthouse API error: ${response.status} ${response.statusText}`);
       }
 
       const result = await response.json();
+      console.log('📦 Lighthouse response:', result);
+      
       const cid = result.Hash;
       const url = `https://gateway.lighthouse.storage/ipfs/${cid}`;
 
@@ -51,6 +58,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ cid, url });
     } catch (uploadError) {
       console.error('❌ Lighthouse upload failed:', uploadError);
+      
+      // If it's a timeout, provide helpful error message
+      if (uploadError instanceof Error && uploadError.message.includes('timeout')) {
+        return NextResponse.json(
+          { error: 'Upload timeout - Lighthouse API is slow or unreachable. Please try again.' },
+          { status: 504 }
+        );
+      }
+      
       throw uploadError;
     }
   } catch (error) {

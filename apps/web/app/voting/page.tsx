@@ -109,64 +109,69 @@ export default function VotingPage() {
   });
 
   const loadSubmissions = useCallback(async () => {
-    if (!submissionCount) return;
     setIsLoading(true);
-    const count = Number(submissionCount);
-    const loaded: BugSubmission[] = [];
+    
+    try {
+      // Load from database API instead of blockchain
+      const res = await fetch(`/api/voting-submissions?status=pending_voting`);
+      const data = await res.json();
+      
+      if (!data.success) {
+        console.error('Failed to load submissions:', data.error);
+        setSubmissions([]);
+        setIsLoading(false);
+        return;
+      }
 
-    for (let i = 1; i <= count; i++) {
-      try {
-        const res = await fetch(`/api/contract-read?address=${VOTING_CONTRACT_ADDRESS}&method=submissions&args=${i}`);
-        const data = await res.json();
-        if (data.result) {
-          const sub = data.result;
-          let imageUrl = "/placeholder-bug.jpg";
-          let metadata = null;
-          if (sub.ipfsHash) {
-            try {
-              const metaRes = await fetch(`https://gateway.pinata.cloud/ipfs/${sub.ipfsHash}`);
-              metadata = await metaRes.json();
-              if (metadata.image) {
-                imageUrl = metadata.image.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/");
-              }
-            } catch (e) { console.error("IPFS error:", e); }
-          }
-          let hasVoted = false;
-          if (address) {
-            const voteRes = await fetch(`/api/contract-read?address=${VOTING_CONTRACT_ADDRESS}&method=hasVoted&args=${i},${address}`);
+      const loaded: BugSubmission[] = [];
+      
+      for (const sub of data.submissions || []) {
+        // Check if user has voted
+        let hasVoted = false;
+        if (address) {
+          try {
+            const voteRes = await fetch(`/api/vote-offchain?uploadId=${sub.id}&voterAddress=${address}`);
             const voteData = await voteRes.json();
-            hasVoted = voteData.result || false;
+            hasVoted = voteData.hasVoted || false;
+          } catch (e) {
+            console.error('Error checking vote status:', e);
           }
-          loaded.push({
-            id: sub.id,
-            submitter: sub.submitter,
-            ipfsHash: sub.ipfsHash,
-            createdAt: sub.createdAt,
-            votesFor: sub.votesFor,
-            votesAgainst: sub.votesAgainst,
-            resolved: sub.resolved,
-            approved: sub.approved,
-            nftClaimed: sub.nftClaimed,
-            nftTokenId: sub.nftTokenId,
-            rarity: sub.rarity,
-            imageUrl,
-            metadata,
-            hasVoted,
-          });
         }
-      } catch (e) { console.error(`Error loading submission ${i}:`, e); }
-    }
-    setSubmissions(loaded.reverse());
-    setIsLoading(false);
-  }, [submissionCount, address]);
 
-  useEffect(() => {
-    if (submissionCount) {
-      loadSubmissions();
-    } else {
+        loaded.push({
+          id: BigInt(sub.id),
+          submitter: sub.discoverer,
+          ipfsHash: sub.metadataCid,
+          createdAt: BigInt(Math.floor(new Date(sub.timestamp).getTime() / 1000)),
+          votesFor: BigInt(sub.votesFor || 0),
+          votesAgainst: BigInt(sub.votesAgainst || 0),
+          resolved: sub.votingResolved || false,
+          approved: sub.votingApproved || false,
+          nftClaimed: false, // Off-chain voting doesn't claim yet
+          nftTokenId: BigInt(0),
+          rarity: 0,
+          imageUrl: sub.imageUrl,
+          metadata: {
+            bugInfo: sub.bugInfo,
+            location: sub.location,
+          },
+          hasVoted,
+        });
+      }
+
+      setSubmissions(loaded);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error loading submissions:', error);
+      setSubmissions([]);
       setIsLoading(false);
     }
-  }, [submissionCount, address, loadSubmissions]);
+  }, [address]);
+
+  useEffect(() => {
+    // Load submissions from database on mount and when address changes
+    loadSubmissions();
+  }, [address, loadSubmissions]);
 
   useEffect(() => {
     if (isTxSuccess) {
@@ -177,14 +182,38 @@ export default function VotingPage() {
     }
   }, [isTxSuccess, refetchCount, loadSubmissions]);
 
-  const handleVote = (submissionId: bigint, voteFor: boolean) => {
-    if (!isConnected) { alert("Connect wallet!"); return; }
-    writeContract({
-      address: VOTING_CONTRACT_ADDRESS,
-      abi: BUG_VOTING_V2_ABI,
-      functionName: "vote",
-      args: [submissionId, voteFor],
-    });
+  const handleVote = async (submissionId: bigint, voteFor: boolean) => {
+    if (!isConnected || !address) { 
+      alert("Connect wallet to vote!"); 
+      return; 
+    }
+
+    try {
+      const res = await fetch('/api/vote-offchain', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          uploadId: submissionId.toString(),
+          voterAddress: address,
+          voteFor: voteFor,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        alert(`Failed to vote: ${data.error}`);
+        return;
+      }
+
+      alert(`Vote recorded! 🎉\n\nYour vote: ${voteFor ? '👍 FOR' : '👎 AGAINST'}\n\nVotes are FREE and stored in the database!`);
+      
+      // Reload submissions to show updated vote counts
+      await loadSubmissions();
+    } catch (error) {
+      console.error('Vote error:', error);
+      alert('Failed to submit vote. Please try again.');
+    }
   };
 
   const handleClaimNFT = (submissionId: bigint) => {
@@ -213,8 +242,8 @@ export default function VotingPage() {
           <div className="flex items-center gap-3 mb-4">
             <Link href="/"><Button variant="ghost" size="icon"><ArrowLeft className="h-5 w-5" /></Button></Link>
             <div>
-              <h1 className="text-2xl font-bold">Community Voting</h1>
-              <p className="text-sm text-muted-foreground">Verify bugs  Earn rewards</p>
+              <h1 className="text-2xl font-bold">Community Voting (FREE)</h1>
+              <p className="text-sm text-muted-foreground">Vote on bug submissions • No gas fees • Help the community</p>
             </div>
           </div>
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "all" | "mine" | "voted")}>
@@ -231,9 +260,9 @@ export default function VotingPage() {
           <div className="flex gap-3">
             <TrendingUp className="h-5 w-5 text-blue-500 mt-0.5" />
             <div>
-              <h3 className="font-semibold mb-1">How Voting Works</h3>
+              <h3 className="font-semibold mb-1">How Voting Works (NEW!)</h3>
               <p className="text-sm text-muted-foreground">
-                Vote costs <strong>10 BUG</strong> stake  Get <strong>15 BUG back</strong> (10 + 5 reward) if approved  Need 5 votes to resolve
+                Voting is <strong>100% FREE</strong> (no gas, no tokens!) • Votes stored in database • After 3 days, approved bugs can mint NFTs on blockchain
               </p>
             </div>
           </div>
@@ -241,7 +270,7 @@ export default function VotingPage() {
         {isLoading ? (
           <div className="text-center py-16">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p className="text-muted-foreground">Loading from blockchain...</p>
+            <p className="text-muted-foreground">Loading submissions from database...</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16">

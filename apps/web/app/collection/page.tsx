@@ -75,6 +75,13 @@ interface UserUpload {
     votesFor: number;
     votesAgainst: number;
   };
+  // Off-chain voting fields
+  votingStatus?: 'not_submitted' | 'pending_voting' | 'approved' | 'rejected' | 'submitted_to_blockchain';
+  votesFor?: number;
+  votesAgainst?: number;
+  votingDeadline?: string;
+  votingResolved?: boolean;
+  votingApproved?: boolean;
 }
 
 export default function CollectionPage() {
@@ -283,71 +290,40 @@ export default function CollectionPage() {
     }
   }, [isAuthenticated, walletAddress, loadUploads]);
 
-  const submitToBlockchain = async (upload: UserUpload) => {
-    if (!window.ethereum || !walletAddress) return;
+  const submitForVoting = async (upload: UserUpload) => {
+    if (!walletAddress) return;
 
     setSubmitting(upload.id);
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
+      console.log('🗳️  Submitting for community voting (FREE)...');
 
-      const bugVotingAddress = process.env.NEXT_PUBLIC_BUG_VOTING_ADDRESS;
-      if (!bugVotingAddress) {
-        throw new Error('Contract address not configured');
+      const res = await fetch('/api/submit-for-voting', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          uploadId: upload.id,
+          walletAddress: walletAddress,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to submit for voting');
       }
 
-      const bugVotingABI = [
-        "function submitBug(string memory metadataCid, uint8 rarity) external returns (uint256)",
-        "event SubmissionCreated(uint256 indexed submissionId, address indexed submitter, string ipfsHash)",
-      ];
+      console.log('✅ Submitted for voting!', data.data);
 
-      const bugVoting = new ethers.Contract(bugVotingAddress, bugVotingABI, signer);
+      const deadline = new Date(data.data.votingDeadline);
+      alert(`Bug submitted for community voting! 🎉\n\n✅ Submission is FREE (no gas cost)\n🗳️ Voting period: 3 days\n⏰ Ends: ${deadline.toLocaleString()}\n\nCommunity members can now vote on your discovery!`);
 
-      console.log('📝 Submitting to blockchain...');
-      const tx = await bugVoting.submitBug(upload.metadataCid, 0); // 0 = common rarity
-      
-      console.log('⏳ Waiting for confirmation...');
-      const receipt = await tx.wait();
-
-      // Extract submission ID from event logs
-      const submissionId = receipt.logs.length > 0 ? 
-        parseInt(receipt.logs[0].topics[1], 16) : 
-        undefined;
-
-      console.log('✅ Submitted to blockchain!', receipt.hash, 'Submission ID:', submissionId);
-
-      // Update database with submission info
-      try {
-        console.log('💾 Updating database...');
-        const updateRes = await fetch('/api/uploads', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            uploadId: upload.id,
-            transactionHash: receipt.hash,
-            submissionId: submissionId,
-          }),
-        });
-
-        const updateData = await updateRes.json();
-        if (!updateData.success) {
-          console.error('Failed to update database:', updateData.error);
-        } else {
-          console.log('✅ Database updated!');
-        }
-      } catch (dbError) {
-        console.error('Failed to update database:', dbError);
-      }
-
-      alert(`Bug submitted for community voting!\n\nTransaction: ${receipt.hash}\nSubmission ID: ${submissionId}`);
-
-      // Reload uploads from blockchain
+      // Reload uploads to show updated status
       await loadUploads();
     } catch (error) {
       const err = error as Error;
-      console.error('Failed to submit:', err);
-      alert(`Failed to submit: ${err.message}`);
+      console.error('Failed to submit for voting:', err);
+      alert(`Failed to submit for voting: ${err.message}`);
     } finally {
       setSubmitting(null);
     }
@@ -463,15 +439,15 @@ export default function CollectionPage() {
             <div className="flex items-start gap-3">
               <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
               <div className="space-y-1">
-                <h3 className="font-semibold text-sm">How BugDex Works</h3>
+                <h3 className="font-semibold text-sm">How BugDex Works (Now with FREE Voting!)</h3>
                 <p className="text-sm text-muted-foreground">
                   Your bug photos are <span className="font-semibold text-foreground">saved to IPFS</span> (decentralized storage) for free! 
-                  To mint an NFT and earn rewards, submit your discovery to the blockchain for community voting.
-                  Approved bugs earn you an NFT and BUG tokens!
+                  Submit for <span className="font-semibold text-foreground">FREE community voting</span> (no gas fees!).
+                  If approved, mint your NFT and earn BUG tokens!
                 </p>
                 <div className="flex gap-2 text-xs text-muted-foreground mt-2">
                   <span className="bg-white dark:bg-gray-800 px-2 py-1 rounded">💾 Free IPFS Storage</span>
-                  <span className="bg-white dark:bg-gray-800 px-2 py-1 rounded">🗳️ Community Voting</span>
+                  <span className="bg-white dark:bg-gray-800 px-2 py-1 rounded">🗳️ FREE Voting (No Gas!)</span>
                   <span className="bg-white dark:bg-gray-800 px-2 py-1 rounded">🎨 NFT Rewards</span>
                 </div>
               </div>
@@ -490,7 +466,8 @@ export default function CollectionPage() {
             <div className="bg-muted/50 p-4 rounded-lg mb-6 text-sm text-left space-y-2">
               <p><strong>📸 Take Photos:</strong> Snap bugs you discover</p>
               <p><strong>💾 Free Storage:</strong> Photos saved to IPFS (decentralized)</p>
-              <p><strong>🗳️ Submit & Earn:</strong> Get community approval to mint NFTs and earn BUG tokens</p>
+              <p><strong>🗳️ FREE Voting:</strong> Submit for community voting (no gas fees!)</p>
+              <p><strong>🎨 Mint NFTs:</strong> If approved, mint your bug as an NFT and earn BUG tokens</p>
               <p><strong>🌍 Help Science:</strong> Contribute to bug conservation data</p>
             </div>
             <Link href="/">
@@ -620,34 +597,111 @@ export default function CollectionPage() {
                   </a>
                 </div>
 
-                {/* Action Button */}
+                {/* Action Button - Off-Chain Voting System */}
                 {!upload.submittedToBlockchain ? (
                   <div className="space-y-2">
-                    <div className="text-xs text-muted-foreground bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
-                      <span className="font-semibold">💾 Saved Off-Chain</span>
-                      <p className="mt-1">Submit to blockchain to mint NFT and earn rewards! (Requires 10 BUG)</p>
-                    </div>
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation(); // Prevent modal from opening
-                        submitToBlockchain(upload);
-                      }}
-                      disabled={submitting === upload.id}
-                      className="w-full"
-                      variant="default"
-                    >
-                      {submitting === upload.id ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Submitting...
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="h-4 w-4 mr-2" />
-                          Submit for Voting & NFT
-                        </>
-                      )}
-                    </Button>
+                    {/* Not yet submitted for voting */}
+                    {(!upload.votingStatus || upload.votingStatus === 'not_submitted') && (
+                      <>
+                        <div className="text-xs text-muted-foreground bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
+                          <span className="font-semibold">💾 Saved Off-Chain</span>
+                          <p className="mt-1">Submit for FREE community voting! If approved, you can mint an NFT.</p>
+                        </div>
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent modal from opening
+                            submitForVoting(upload);
+                          }}
+                          disabled={submitting === upload.id}
+                          className="w-full"
+                          variant="default"
+                        >
+                          {submitting === upload.id ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Submitting...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="h-4 w-4 mr-2" />
+                              Submit for Community Voting (FREE)
+                            </>
+                          )}
+                        </Button>
+                      </>
+                    )}
+                    
+                    {/* Currently in voting */}
+                    {upload.votingStatus === 'pending_voting' && upload.votingDeadline && (
+                      <div className="text-sm bg-blue-50 dark:bg-blue-950 p-3 rounded-md border border-blue-200 dark:border-blue-800">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Info className="h-4 w-4 text-blue-600" />
+                          <span className="font-semibold">🗳️ In Community Voting</span>
+                        </div>
+                        <div className="text-xs space-y-1 mt-2">
+                          <div className="flex justify-between">
+                            <span>Votes For:</span>
+                            <span className="font-semibold text-green-600">{upload.votesFor || 0}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Votes Against:</span>
+                            <span className="font-semibold text-red-600">{upload.votesAgainst || 0}</span>
+                          </div>
+                          <div className="pt-1 border-t border-blue-200 dark:border-blue-700">
+                            <span>Ends: {new Date(upload.votingDeadline).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Approved - Ready to mint */}
+                    {upload.votingStatus === 'approved' && upload.votingApproved && (
+                      <>
+                        <div className="text-sm bg-green-50 dark:bg-green-950 p-3 rounded-md border border-green-200 dark:border-green-800">
+                          <div className="flex items-center gap-2 mb-1">
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <span className="font-semibold">✅ Approved by Community!</span>
+                          </div>
+                          <div className="text-xs mt-1">
+                            Your bug passed voting! Click below to mint your NFT on the blockchain.
+                          </div>
+                        </div>
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // TODO: Add mintNFT function that calls blockchain
+                            alert('Mint NFT function coming soon!');
+                          }}
+                          disabled={submitting === upload.id}
+                          className="w-full bg-green-600 hover:bg-green-700"
+                        >
+                          {submitting === upload.id ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Minting...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-4 w-4 mr-2" />
+                              Mint NFT (Costs Gas)
+                            </>
+                          )}
+                        </Button>
+                      </>
+                    )}
+                    
+                    {/* Rejected */}
+                    {upload.votingStatus === 'rejected' && !upload.votingApproved && (
+                      <div className="text-sm text-red-600 bg-red-50 dark:bg-red-950 p-3 rounded-md border border-red-200 dark:border-red-800">
+                        <div className="flex items-center gap-2">
+                          <AlertTriangle className="h-4 w-4" />
+                          <span className="font-semibold">❌ Not Approved</span>
+                        </div>
+                        <div className="text-xs mt-1">
+                          This submission didn&apos;t receive enough community votes.
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-2">

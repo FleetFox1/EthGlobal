@@ -167,8 +167,11 @@ export function UnlockFaucetModal({
 
           {/* Pricing */}
           <div className="text-center">
-            <p className="text-3xl font-bold">$1</p>
-            <p className="text-sm text-muted-foreground">One-time unlock fee</p>
+            <p className="text-3xl font-bold">~$1</p>
+            <p className="text-sm text-muted-foreground">One-time payment</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Unlocks lifetime faucet access + 100 BUG tokens
+            </p>
           </div>
 
           {/* Payment Methods */}
@@ -230,9 +233,14 @@ export function UnlockFaucetModal({
           )}
 
           {/* Info */}
-          <p className="text-xs text-muted-foreground text-center">
-            Funds support gas pool for gasless operations. This is a one-time payment.
-          </p>
+          <div className="text-xs text-muted-foreground text-center space-y-2">
+            <p>
+              Funds support gas pool for gasless operations. This is a one-time payment.
+            </p>
+            <p className="text-amber-600 dark:text-amber-400">
+              <strong>Note:</strong> BUG tokens have no monetary value and cannot be exchanged for fiat or cryptocurrency.
+            </p>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

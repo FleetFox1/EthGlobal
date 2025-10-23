@@ -202,13 +202,10 @@ export default function ProfileV2() {
         getNFTBalance(address).catch(() => 0),
       ]);
 
-      // Calculate PYUSD value (100 BUG = 1 PYUSD)
-      const pyusdValue = (parseFloat(bugBalance) / 100).toFixed(2);
-
       setOnChainStats({
         bugTokenBalance: parseFloat(bugBalance).toFixed(0),
         nftCount,
-        pyusdValue,
+        pyusdValue: "0.00", // Deprecated: BUG tokens have no monetary value
       });
     } catch (error) {
       console.error("Failed to load on-chain stats:", error);
@@ -572,12 +569,12 @@ export default function ProfileV2() {
               <div className="text-center">
                 <Target className="h-6 w-6 mx-auto mb-2 text-blue-500" />
                 <p className="text-2xl font-bold">{parseInt(onChainStats.bugTokenBalance)}</p>
-                <p className="text-xs text-muted-foreground">BUG Tokens</p>
+                <p className="text-xs text-muted-foreground">BUG Tokens (Utility)</p>
               </div>
               <div className="text-center">
                 <TrendingUp className="h-6 w-6 mx-auto mb-2 text-purple-500" />
-                <p className="text-2xl font-bold">${onChainStats.pyusdValue}</p>
-                <p className="text-xs text-muted-foreground">PYUSD Value</p>
+                <p className="text-2xl font-bold">{parseInt(onChainStats.bugTokenBalance)}</p>
+                <p className="text-xs text-muted-foreground">Tokens Available</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3 mt-4">

@@ -106,27 +106,33 @@ export default function AboutPage() {
               <Coins className="h-8 w-8 text-green-500" />
               <div>
                 <h4 className="font-semibold text-lg">BUG Token</h4>
-                <p className="text-sm text-muted-foreground">Our native utility token</p>
+                <p className="text-sm text-muted-foreground">Platform utility token (no monetary value)</p>
               </div>
             </div>
 
             <div className="space-y-3">
               <div className="flex justify-between items-center pb-3 border-b border-border">
-                <span className="text-sm">Exchange Rate</span>
-                <span className="font-semibold">100 BUG = 1 PYUSD</span>
-              </div>
-              <div className="flex justify-between items-center pb-3 border-b border-border">
-                <span className="text-sm">Mint Cost</span>
-                <span className="font-semibold">100 BUG or Community Vote</span>
+                <span className="text-sm">Submission Cost</span>
+                <span className="font-semibold">10 BUG to submit for voting</span>
               </div>
               <div className="flex justify-between items-center pb-3 border-b border-border">
                 <span className="text-sm">Vote Reward</span>
                 <span className="font-semibold">5 BUG per vote</span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center pb-3 border-b border-border">
                 <span className="text-sm">Successful Mint Reward</span>
                 <span className="font-semibold">100 BUG tokens</span>
               </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm">Faucet Access</span>
+                <span className="font-semibold">100 BUG (one-time unlock)</span>
+              </div>
+            </div>
+
+            <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded text-xs text-muted-foreground">
+              ⚠️ <strong>Disclaimer:</strong> BUG tokens are utility tokens with no inherent monetary value. 
+              They cannot be exchanged for fiat currency, PYUSD, ETH, or other cryptocurrencies. 
+              BUG tokens are used solely for platform governance and access.
             </div>
           </div>
         </section>

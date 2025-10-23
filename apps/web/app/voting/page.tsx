@@ -11,12 +11,12 @@ import { useWallet } from "@/lib/useWallet";
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 
 interface BugSubmission {
-  id: bigint;
+  id: string; // Changed from bigint to string for off-chain voting
   submitter: string;
   ipfsHash: string;
-  createdAt: bigint;
-  votesFor: bigint;
-  votesAgainst: bigint;
+  createdAt: number; // Changed from bigint to number (timestamp in ms)
+  votesFor: number; // Changed from bigint to number for off-chain voting
+  votesAgainst: number; // Changed from bigint to number for off-chain voting
   resolved: boolean;
   approved: boolean;
   nftClaimed: boolean;
@@ -139,12 +139,12 @@ export default function VotingPage() {
         }
 
         loaded.push({
-          id: BigInt(sub.id),
+          id: sub.id, // Keep as string (no BigInt conversion)
           submitter: sub.discoverer,
           ipfsHash: sub.metadataCid,
-          createdAt: BigInt(Math.floor(new Date(sub.timestamp).getTime() / 1000)),
-          votesFor: BigInt(sub.votesFor || 0),
-          votesAgainst: BigInt(sub.votesAgainst || 0),
+          createdAt: sub.timestamp, // Already a number (timestamp in ms)
+          votesFor: sub.votesFor || 0, // Already a number
+          votesAgainst: sub.votesAgainst || 0, // Already a number
           resolved: sub.votingResolved || false,
           approved: sub.votingApproved || false,
           nftClaimed: false, // Off-chain voting doesn't claim yet
@@ -182,7 +182,7 @@ export default function VotingPage() {
     }
   }, [isTxSuccess, refetchCount, loadSubmissions]);
 
-  const handleVote = async (submissionId: bigint, voteFor: boolean) => {
+  const handleVote = async (submissionId: string, voteFor: boolean) => {
     if (!isConnected || !address) { 
       alert("Connect wallet to vote!"); 
       return; 
@@ -193,7 +193,7 @@ export default function VotingPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          uploadId: submissionId.toString(),
+          uploadId: submissionId, // Already a string, no need to convert
           voterAddress: address,
           voteFor: voteFor,
         }),
@@ -216,7 +216,7 @@ export default function VotingPage() {
     }
   };
 
-  const handleClaimNFT = (submissionId: bigint) => {
+  const handleClaimNFT = (submissionId: string) => {
     if (!isConnected) { alert("Connect wallet!"); return; }
     writeContract({
       address: VOTING_CONTRACT_ADDRESS,
@@ -291,12 +291,12 @@ export default function VotingPage() {
 }
 
 function SubmissionCard({ submission: s, onVote, onClaimNFT, isProcessing, currentAddress }: {
-  submission: BugSubmission; onVote: (id: bigint, voteFor: boolean) => void; onClaimNFT: (id: bigint) => void; isProcessing: boolean; currentAddress?: string;
+  submission: BugSubmission; onVote: (id: string, voteFor: boolean) => void; onClaimNFT: (id: string) => void; isProcessing: boolean; currentAddress?: string;
 }) {
   const isMine = s.submitter.toLowerCase() === currentAddress?.toLowerCase();
   const canClaim = isMine && s.resolved && s.approved && !s.nftClaimed;
   const total = s.votesFor + s.votesAgainst;
-  const pct = total > BigInt(0) ? Number((s.votesFor * BigInt(100)) / total) : 0;
+  const pct = total > 0 ? Math.round((s.votesFor * 100) / total) : 0;
 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow">
@@ -309,28 +309,28 @@ function SubmissionCard({ submission: s, onVote, onClaimNFT, isProcessing, curre
       </div>
       <div className="p-4">
         <div className="flex justify-between text-sm text-muted-foreground mb-3">
-          <div className="flex gap-1"><Clock className="h-3.5 w-3.5" />{new Date(Number(s.createdAt) * 1000).toLocaleDateString()}</div>
+          <div className="flex gap-1"><Clock className="h-3.5 w-3.5" />{new Date(s.createdAt).toLocaleDateString()}</div>
           <span className="font-mono text-xs">{s.submitter.slice(0, 6)}...{s.submitter.slice(-4)}</span>
         </div>
         {s.metadata && <div className="mb-3"><h3 className="font-semibold">{s.metadata.bugInfo?.commonName || "Unknown"}</h3>
           {s.metadata.bugInfo?.scientificName && <p className="text-xs italic text-muted-foreground">{s.metadata.bugInfo.scientificName}</p>}</div>}
         <div className="grid grid-cols-2 gap-3 mb-3">
           <div className="text-center p-2 bg-green-500/10 rounded">
-            <div className="flex justify-center gap-1 mb-1"><ThumbsUp className="h-4 w-4 text-green-500" /><span className="font-bold text-green-500">{s.votesFor.toString()}</span></div>
+            <div className="flex justify-center gap-1 mb-1"><ThumbsUp className="h-4 w-4 text-green-500" /><span className="font-bold text-green-500">{s.votesFor}</span></div>
             <p className="text-xs text-muted-foreground">Approve</p>
           </div>
           <div className="text-center p-2 bg-red-500/10 rounded">
-            <div className="flex justify-center gap-1 mb-1"><ThumbsDown className="h-4 w-4 text-red-500" /><span className="font-bold text-red-500">{s.votesAgainst.toString()}</span></div>
+            <div className="flex justify-center gap-1 mb-1"><ThumbsDown className="h-4 w-4 text-red-500" /><span className="font-bold text-red-500">{s.votesAgainst}</span></div>
             <p className="text-xs text-muted-foreground">Reject</p>
           </div>
         </div>
-        {total > BigInt(0) && <div className="mb-3">
+        {total > 0 && <div className="mb-3">
           <div className="flex justify-between text-xs mb-1">
-            <span className="text-muted-foreground">{total.toString()} vote{total > BigInt(1) ? "s" : ""}  Need 5</span>
+            <span className="text-muted-foreground">{total} vote{total > 1 ? "s" : ""}  Need 5</span>
             <span className="font-medium">{Math.round(pct)}% approve</span>
           </div>
           <div className="h-2 bg-muted rounded-full overflow-hidden">
-            <div className="h-full bg-green-500 transition-all" style={{ width: `$${pct}%` }} />
+            <div className="h-full bg-green-500 transition-all" style={{ width: `${pct}%` }} />
           </div>
         </div>}
         {!s.resolved && !s.hasVoted && !isMine ? (

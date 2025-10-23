@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
       votingStatus: row.voting_status,
       votesFor: row.votes_for || 0,
       votesAgainst: row.votes_against || 0,
-      votingDeadline: row.voting_deadline ? parseInt(row.voting_deadline) : null,
+      votingDeadline: row.voting_deadline ? new Date(row.voting_deadline).getTime() : null,
       votingResolved: row.voting_resolved || false,
       votingApproved: row.voting_approved || false,
       submittedToBlockchain: row.submitted_to_blockchain || false,

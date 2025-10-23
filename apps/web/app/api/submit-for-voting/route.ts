@@ -58,14 +58,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Set voting deadline (3 days from now)
-    const votingDeadline = Date.now() + (3 * 24 * 60 * 60 * 1000);
+    const votingDeadline = new Date(Date.now() + (3 * 24 * 60 * 60 * 1000));
 
     // Update upload to pending_voting status
     await sql`
       UPDATE uploads
       SET 
         voting_status = 'pending_voting',
-        voting_deadline = ${votingDeadline},
+        voting_deadline = ${votingDeadline.toISOString()},
         votes_for = 0,
         votes_against = 0,
         voting_resolved = false,

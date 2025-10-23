@@ -27,6 +27,63 @@ import Link from "next/link";
 import { useUser } from "@/lib/useUser";
 import { ethers } from "ethers";
 
+// NFT Rarity tiers based on net vote score
+type RarityTier = 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary';
+
+interface RarityInfo {
+  tier: RarityTier;
+  color: string;
+  bgColor: string;
+  borderColor: string;
+  emoji: string;
+}
+
+function calculateRarity(votesFor: number = 0, votesAgainst: number = 0): RarityInfo {
+  const netVotes = votesFor - votesAgainst;
+  
+  if (netVotes >= 10) {
+    return {
+      tier: 'Legendary',
+      color: 'text-orange-600',
+      bgColor: 'bg-gradient-to-br from-orange-400 to-red-500',
+      borderColor: 'border-orange-500',
+      emoji: '✨',
+    };
+  } else if (netVotes >= 7) {
+    return {
+      tier: 'Epic',
+      color: 'text-purple-600',
+      bgColor: 'bg-gradient-to-br from-purple-400 to-pink-500',
+      borderColor: 'border-purple-500',
+      emoji: '💎',
+    };
+  } else if (netVotes >= 4) {
+    return {
+      tier: 'Rare',
+      color: 'text-blue-600',
+      bgColor: 'bg-gradient-to-br from-blue-400 to-cyan-500',
+      borderColor: 'border-blue-500',
+      emoji: '💠',
+    };
+  } else if (netVotes >= 1) {
+    return {
+      tier: 'Uncommon',
+      color: 'text-green-600',
+      bgColor: 'bg-gradient-to-br from-green-400 to-emerald-500',
+      borderColor: 'border-green-500',
+      emoji: '🟢',
+    };
+  } else {
+    return {
+      tier: 'Common',
+      color: 'text-gray-600',
+      bgColor: 'bg-gradient-to-br from-gray-300 to-gray-400',
+      borderColor: 'border-gray-400',
+      emoji: '⚪',
+    };
+  }
+}
+
 interface UserUpload {
   id: string;
   imageCid: string;
@@ -98,6 +155,19 @@ export default function CollectionPage() {
 
     try {
       setLoading(true);
+      
+      // First, resolve any expired voting periods
+      try {
+        console.log('🗳️ Checking for expired voting periods...');
+        const resolveRes = await fetch('/api/resolve-voting');
+        const resolveData = await resolveRes.json();
+        if (resolveData.success && resolveData.resolved > 0) {
+          console.log(`✅ Resolved ${resolveData.resolved} voting period(s)`, resolveData.resolved);
+        }
+      } catch (resolveError) {
+        console.error('Failed to resolve voting periods:', resolveError);
+        // Continue loading even if resolution fails
+      }
       
       // Get submission IDs from blockchain for this user
       const VOTING_CONTRACT_ADDRESS = "0xDD05459B4EAED043Ef5D12f45974D0f7468c28e9";
@@ -657,36 +727,68 @@ export default function CollectionPage() {
                     {/* Approved - Ready to mint */}
                     {upload.votingStatus === 'approved' && upload.votingApproved && (
                       <>
-                        <div className="text-sm bg-green-50 dark:bg-green-950 p-3 rounded-md border border-green-200 dark:border-green-800">
-                          <div className="flex items-center gap-2 mb-1">
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                            <span className="font-semibold">✅ Approved by Community!</span>
-                          </div>
-                          <div className="text-xs mt-1">
-                            Your bug passed voting! Click below to mint your NFT on the blockchain.
-                          </div>
-                        </div>
-                        <Button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            // TODO: Add mintNFT function that calls blockchain
-                            alert('Mint NFT function coming soon!');
-                          }}
-                          disabled={submitting === upload.id}
-                          className="w-full bg-green-600 hover:bg-green-700"
-                        >
-                          {submitting === upload.id ? (
+                        {(() => {
+                          const rarity = calculateRarity(upload.votesFor, upload.votesAgainst);
+                          const netVotes = (upload.votesFor || 0) - (upload.votesAgainst || 0);
+                          
+                          return (
                             <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Minting...
+                              <div className={`text-sm p-3 rounded-md border-2 ${rarity.borderColor} bg-gradient-to-br from-white to-green-50 dark:from-gray-900 dark:to-green-950`}>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <CheckCircle className="h-4 w-4 text-green-600" />
+                                  <span className="font-semibold">✅ Approved by Community!</span>
+                                </div>
+                                
+                                {/* Rarity Badge */}
+                                <div className="flex items-center gap-2 mb-2">
+                                  <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold ${rarity.bgColor} text-white shadow-lg`}>
+                                    <span>{rarity.emoji}</span>
+                                    <span>{rarity.tier.toUpperCase()}</span>
+                                  </div>
+                                  <span className="text-xs text-muted-foreground">
+                                    (+{netVotes} net votes)
+                                  </span>
+                                </div>
+                                
+                                <div className="text-xs space-y-1">
+                                  <div className="flex justify-between">
+                                    <span>👍 For:</span>
+                                    <span className="font-semibold text-green-600">{upload.votesFor || 0}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>👎 Against:</span>
+                                    <span className="font-semibold text-red-600">{upload.votesAgainst || 0}</span>
+                                  </div>
+                                </div>
+                                
+                                <p className="text-xs mt-2 text-muted-foreground">
+                                  Your NFT will have a <strong className={rarity.color}>{rarity.tier}</strong> design! Higher votes = rarer card. 🎨
+                                </p>
+                              </div>
+                              <Button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // TODO: Add mintNFT function that calls blockchain
+                                  alert(`Ready to mint ${rarity.tier} NFT!\n\nThis will:\n✅ Mint on blockchain (costs gas)\n✨ Create ${rarity.tier} collectible card\n🎨 Special ${rarity.tier} design with holographic effects\n\nMint function coming soon!`);
+                                }}
+                                disabled={submitting === upload.id}
+                                className={`w-full font-bold shadow-lg ${rarity.bgColor} hover:opacity-90 border-2 ${rarity.borderColor}`}
+                              >
+                                {submitting === upload.id ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Minting...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Sparkles className="h-4 w-4 mr-2" />
+                                    Mint {rarity.tier} NFT {rarity.emoji}
+                                  </>
+                                )}
+                              </Button>
                             </>
-                          ) : (
-                            <>
-                              <Sparkles className="h-4 w-4 mr-2" />
-                              Mint NFT (Costs Gas)
-                            </>
-                          )}
-                        </Button>
+                          );
+                        })()}
                       </>
                     )}
                     

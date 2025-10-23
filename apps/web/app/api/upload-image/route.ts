@@ -37,11 +37,18 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Image uploaded to IPFS:', { cid, url });
 
-    return NextResponse.json({ cid, url });
+    return NextResponse.json({ 
+      success: true,
+      cid, 
+      url 
+    });
   } catch (error) {
     console.error('❌ Upload error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Upload failed' },
+      { 
+        success: false,
+        error: error instanceof Error ? error.message : 'Upload failed' 
+      },
       { status: 500 }
     );
   }

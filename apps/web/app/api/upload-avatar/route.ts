@@ -33,11 +33,18 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Avatar uploaded:', cid);
 
-    return NextResponse.json({ cid });
+    return NextResponse.json({ 
+      success: true,
+      cid,
+      url: `https://gateway.pinata.cloud/ipfs/${cid}`
+    });
   } catch (error) {
     console.error('❌ Avatar upload error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Upload failed' },
+      { 
+        success: false,
+        error: error instanceof Error ? error.message : 'Upload failed' 
+      },
       { status: 500 }
     );
   }

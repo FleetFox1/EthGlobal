@@ -48,8 +48,11 @@ export async function GET(request: NextRequest) {
       const votesFor = upload.votes_for || 0;
       const votesAgainst = upload.votes_against || 0;
       
-      // Approval logic: more FOR votes than AGAINST votes
-      const approved = votesFor > votesAgainst;
+      // Approval logic: 
+      // - Net votes >= 0 (including 0 total votes) → Approved
+      // - Net votes < 0 (more against than for) → Rejected
+      const netVotes = votesFor - votesAgainst;
+      const approved = netVotes >= 0;
       const newStatus = approved ? 'approved' : 'rejected';
       
       // Update the upload
@@ -66,6 +69,7 @@ export async function GET(request: NextRequest) {
         id: upload.id,
         votesFor,
         votesAgainst,
+        netVotes,
         approved,
         status: newStatus,
       });

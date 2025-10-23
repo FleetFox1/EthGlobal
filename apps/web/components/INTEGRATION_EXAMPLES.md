@@ -1,8 +1,10 @@
-/**
- * INTEGRATION EXAMPLE: Using NFTWithRarityFrame in Collection Page
- * Copy this code into your collection page to replace existing card display
- */
+# Integration Examples: Using NFTWithRarityFrame in Collection Page
 
+Copy these code snippets into your collection page to replace existing card display.
+
+## Basic Usage
+
+```tsx
 import NFTWithRarityFrame from '@/components/NFTWithRarityFrame';
 
 // Example: Inside your collection page component where you map over uploads
@@ -45,8 +47,11 @@ import NFTWithRarityFrame from '@/components/NFTWithRarityFrame';
     </div>
   );
 })}
+```
 
-// ADVANCED: Show different views based on status
+## Advanced: Show Different Views Based on Status
+
+```tsx
 function renderUploadCard(upload: Upload) {
   const netVotes = (upload.votes_for || 0) - (upload.votes_against || 0);
   
@@ -95,7 +100,11 @@ function renderUploadCard(upload: Upload) {
     );
   }
 }
+```
 
+## Helper: Show Rarity Info
+
+```tsx
 // HELPER: Import getRarityFromScore if you need it
 import { getRarityFromScore } from '@/types/rarityTiers';
 
@@ -113,8 +122,11 @@ function RarityDisplay({ voteScore }: { voteScore: number }) {
     </div>
   );
 }
+```
 
-// GRID LAYOUT: Display cards in responsive grid
+## Grid Layout: Display Cards in Responsive Grid
+
+```tsx
 function NFTCardGrid({ uploads }: { uploads: Upload[] }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 p-8">
@@ -137,8 +149,11 @@ function NFTCardGrid({ uploads }: { uploads: Upload[] }) {
     </div>
   );
 }
+```
 
-// MODAL VIEW: Show expanded card on click
+## Modal View: Show Expanded Card on Click
+
+```tsx
 function NFTCardModal({ upload, onClose }: { upload: Upload; onClose: () => void }) {
   const netVotes = (upload.votes_for || 0) - (upload.votes_against || 0);
   
@@ -173,3 +188,8 @@ function NFTCardModal({ upload, onClose }: { upload: Upload; onClose: () => void
     </div>
   );
 }
+```
+
+---
+
+**Note**: These are example snippets. Replace `Upload` type, `handleMintNFT`, and `submitForVoting` with your actual implementations.

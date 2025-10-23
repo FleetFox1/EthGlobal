@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
-
-const sql = neon(process.env.DATABASE_URL!);
+import { sql } from '@/lib/db/client';
 
 /**
  * Resolve expired voting periods
@@ -20,7 +18,7 @@ export async function GET(request: NextRequest) {
     const now = new Date();
     
     // Find all uploads with expired voting deadlines that haven't been resolved
-    const expiredUploads = await sql`
+    const result = await sql`
       SELECT 
         id,
         votes_for,
@@ -33,6 +31,8 @@ export async function GET(request: NextRequest) {
         AND voting_deadline <= ${now.toISOString()}
         AND voting_resolved = false
     `;
+    
+    const expiredUploads = result.rows;
     
     if (expiredUploads.length === 0) {
       return NextResponse.json({
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Get the upload
-    const uploads = await sql`
+    const result = await sql`
       SELECT 
         id,
         votes_for,
@@ -119,6 +119,8 @@ export async function POST(request: NextRequest) {
       FROM uploads
       WHERE id = ${uploadId}
     `;
+    
+    const uploads = result.rows;
     
     if (uploads.length === 0) {
       return NextResponse.json(

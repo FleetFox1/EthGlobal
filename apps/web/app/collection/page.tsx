@@ -316,6 +316,30 @@ export default function CollectionPage() {
         undefined;
 
       console.log('✅ Submitted to blockchain!', receipt.hash, 'Submission ID:', submissionId);
+
+      // Update database with submission info
+      try {
+        console.log('💾 Updating database...');
+        const updateRes = await fetch('/api/uploads', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            uploadId: upload.id,
+            transactionHash: receipt.hash,
+            submissionId: submissionId,
+          }),
+        });
+
+        const updateData = await updateRes.json();
+        if (!updateData.success) {
+          console.error('Failed to update database:', updateData.error);
+        } else {
+          console.log('✅ Database updated!');
+        }
+      } catch (dbError) {
+        console.error('Failed to update database:', dbError);
+      }
+
       alert(`Bug submitted for community voting!\n\nTransaction: ${receipt.hash}\nSubmission ID: ${submissionId}`);
 
       // Reload uploads from blockchain

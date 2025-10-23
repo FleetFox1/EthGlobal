@@ -124,10 +124,10 @@ export default function VotingPage() {
           let metadata = null;
           if (sub.ipfsHash) {
             try {
-              const metaRes = await fetch(`https://gateway.lighthouse.storage/ipfs/${sub.ipfsHash}`);
+              const metaRes = await fetch(`https://gateway.pinata.cloud/ipfs/${sub.ipfsHash}`);
               metadata = await metaRes.json();
               if (metadata.image) {
-                imageUrl = metadata.image.replace("ipfs://", "https://gateway.lighthouse.storage/ipfs/");
+                imageUrl = metadata.image.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/");
               }
             } catch (e) { console.error("IPFS error:", e); }
           }

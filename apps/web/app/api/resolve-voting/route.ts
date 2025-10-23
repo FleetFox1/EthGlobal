@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
         metadata_cid
       FROM uploads
       WHERE voting_status = 'pending_voting'
-        AND voting_deadline <= ${now.toISOString()}
+        AND voting_deadline <= NOW()
         AND voting_resolved = false
     `;
     

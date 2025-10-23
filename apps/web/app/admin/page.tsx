@@ -26,7 +26,8 @@ export default function AdminPage() {
     activeSubmissions: "0",
     totalVotes: "0",
   });
-  const [loadingStats, setLoadingStats] = useState(false); // Changed to false
+  const [dbStats, setDbStats] = useState<any>(null);
+  const [loadingStats, setLoadingStats] = useState(false);
 
   useEffect(() => {
     async function loadStats() {
@@ -56,12 +57,20 @@ export default function AdminPage() {
           bugNFT.totalSupply(),
         ]);
 
+        // Load database stats
+        const dbRes = await fetch('/api/admin/stats');
+        const dbData = await dbRes.json();
+        
+        if (dbData.success) {
+          setDbStats(dbData.data);
+        }
+
         setStats({
           totalSupply: ethers.formatEther(totalSupply),
           maxSupply: ethers.formatEther(maxSupply),
           totalNFTs: totalNFTs.toString(),
-          activeSubmissions: "0", // TODO: Add when we have submission tracking
-          totalVotes: "0", // TODO: Add when we have vote tracking
+          activeSubmissions: dbData.success ? dbData.data.votes.active.toString() : "0",
+          totalVotes: dbData.success ? dbData.data.votes.total.toString() : "0",
         });
       } catch (error) {
         console.error("Error loading admin stats:", error);
@@ -199,24 +208,35 @@ export default function AdminPage() {
           <Card className="p-6">
             <div className="flex items-center justify-between mb-2">
               <Vote className="h-8 w-8 text-blue-500" />
+              {loadingStats && <Loader2 className="h-4 w-4 animate-spin" />}
             </div>
-            <h3 className="text-2xl font-bold mb-1">{stats.activeSubmissions}</h3>
-            <p className="text-sm text-muted-foreground">Active Submissions</p>
+            <h3 className="text-2xl font-bold mb-1">{loadingStats ? '...' : stats.activeSubmissions}</h3>
+            <p className="text-sm text-muted-foreground">Active Voting</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Pending community votes
+            </p>
           </Card>
 
           <Card className="p-6">
             <div className="flex items-center justify-between mb-2">
               <TrendingUp className="h-8 w-8 text-green-500" />
+              {loadingStats && <Loader2 className="h-4 w-4 animate-spin" />}
             </div>
-            <h3 className="text-2xl font-bold mb-1">{stats.totalVotes}</h3>
+            <h3 className="text-2xl font-bold mb-1">{loadingStats ? '...' : stats.totalVotes}</h3>
             <p className="text-sm text-muted-foreground">Total Votes Cast</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Free off-chain voting
+            </p>
           </Card>
 
           <Card className="p-6">
             <div className="flex items-center justify-between mb-2">
               <Users className="h-8 w-8 text-orange-500" />
+              {loadingStats && <Loader2 className="h-4 w-4 animate-spin" />}
             </div>
-            <h3 className="text-2xl font-bold mb-1">0</h3>
+            <h3 className="text-2xl font-bold mb-1">
+              {loadingStats ? '...' : dbStats?.users || 0}
+            </h3>
             <p className="text-sm text-muted-foreground">Registered Users</p>
           </Card>
 
@@ -229,6 +249,48 @@ export default function AdminPage() {
             <p className="text-xs text-green-500 mt-1">● Connected</p>
           </Card>
         </div>
+
+        {/* Submission Breakdown */}
+        {dbStats && (
+          <Card className="p-6 mb-8">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <Database className="h-5 w-5" />
+              Submission Pipeline (Off-Chain Voting)
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="text-center p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                <div className="text-3xl font-bold text-gray-600">{dbStats.submissions.notSubmitted}</div>
+                <div className="text-sm text-muted-foreground mt-1">Not Submitted</div>
+                <div className="text-xs text-muted-foreground mt-1">Awaiting vote</div>
+              </div>
+              <div className="text-center p-4 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                <div className="text-3xl font-bold text-blue-600">{dbStats.submissions.pendingVoting}</div>
+                <div className="text-sm text-muted-foreground mt-1">Pending Voting</div>
+                <div className="text-xs text-muted-foreground mt-1">3-day period</div>
+              </div>
+              <div className="text-center p-4 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                <div className="text-3xl font-bold text-green-600">{dbStats.submissions.approved}</div>
+                <div className="text-sm text-muted-foreground mt-1">Approved</div>
+                <div className="text-xs text-muted-foreground mt-1">Can mint NFT</div>
+              </div>
+              <div className="text-center p-4 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                <div className="text-3xl font-bold text-red-600">{dbStats.submissions.rejected}</div>
+                <div className="text-sm text-muted-foreground mt-1">Rejected</div>
+                <div className="text-xs text-muted-foreground mt-1">Failed vote</div>
+              </div>
+              <div className="text-center p-4 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                <div className="text-3xl font-bold text-purple-600">{dbStats.submissions.minted}</div>
+                <div className="text-sm text-muted-foreground mt-1">Minted</div>
+                <div className="text-xs text-muted-foreground mt-1">On blockchain</div>
+              </div>
+            </div>
+            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/50 rounded-lg border border-blue-200 dark:border-blue-800">
+              <p className="text-sm text-blue-900 dark:text-blue-100">
+                <strong>ℹ️ Off-Chain Voting System:</strong> Community votes are FREE and stored in the database. After 3 days, if votes_for &gt; votes_against, the bug is approved. Users then pay gas to mint approved bugs as NFTs with rarity based on vote score!
+              </p>
+            </div>
+          </Card>
+        )}
 
         {/* Admin Actions */}
         <Card className="p-6">
@@ -281,10 +343,18 @@ export default function AdminPage() {
               </code>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground mb-1">BugVoting</p>
+              <p className="text-sm text-muted-foreground mb-1">
+                BugVoting 
+                <span className="ml-2 px-2 py-0.5 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 rounded">
+                  ⚠️ DEPRECATED
+                </span>
+              </p>
               <code className="text-sm bg-muted px-3 py-2 rounded block">
                 {process.env.NEXT_PUBLIC_BUG_VOTING_ADDRESS}
               </code>
+              <p className="text-xs text-muted-foreground mt-2">
+                <strong>Note:</strong> On-chain voting has been replaced with off-chain voting (free & instant). This contract is kept for ownership verification only.
+              </p>
             </div>
           </div>
         </Card>

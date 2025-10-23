@@ -125,7 +125,7 @@ export default function VotingPage() {
 
       const loaded: BugSubmission[] = [];
       
-      for (const sub of data.submissions || []) {
+      for (const sub of data.data?.submissions || []) {
         // Check if user has voted
         let hasVoted = false;
         if (address) {

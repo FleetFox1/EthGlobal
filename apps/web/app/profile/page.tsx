@@ -67,6 +67,7 @@ export default function ProfileV2() {
   useEffect(() => {
     if (isConnected && address) {
       loadOnChainStats();
+      loadProfileData();
     }
   }, [isConnected, address]);
 
@@ -78,46 +79,105 @@ export default function ProfileV2() {
     }
   }, [profile]);
 
+  const loadProfileData = async () => {
+    if (!address) return;
+
+    try {
+      console.log("📥 Loading profile data from database...");
+      
+      // Query the database for user profile
+      const response = await fetch(`/api/user/get-profile?address=${address}`);
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        console.log("✅ Profile loaded:", data.data);
+        setUsername(data.data.username || "");
+        setBio(data.data.bio || "");
+        setProfilePicture(data.data.avatarUrl || "");
+      }
+    } catch (error) {
+      console.error("❌ Failed to load profile:", error);
+    }
+  };
+
   const handleSaveProfile = async () => {
+    if (!address) {
+      console.error("No wallet address connected");
+      return;
+    }
+
     setSaving(true);
     setSaved(false);
     
     try {
-      // TODO: Save profile settings to backend/blockchain
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate save
-      
-      console.log("Saving profile:", {
+      console.log("💾 Saving profile:", {
         username,
         bio,
         profilePicture,
-        emailNotifications,
-        voteNotifications,
-        mintNotifications,
-        publicCollection,
-        showWalletAddress,
-        shareLocation,
-        theme,
-        currency,
-        defaultPayment,
       });
+
+      // Save to database
+      const response = await fetch("/api/user/update-profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          address,
+          username,
+          bio,
+          avatarUrl: profilePicture,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || "Failed to save profile");
+      }
+
+      console.log("✅ Profile saved successfully:", data);
       
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
-      console.error("Failed to save profile:", error);
+      console.error("❌ Failed to save profile:", error);
+      alert(`Failed to save profile: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleProfilePictureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProfilePictureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfilePicture(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    try {
+      console.log("📤 Uploading avatar to IPFS...");
+
+      // Upload to IPFS via Pinata
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const uploadRes = await fetch("/api/upload-avatar", {
+        method: "POST",
+        body: formData,
+      });
+
+      const uploadData = await uploadRes.json();
+
+      if (!uploadData.success) {
+        throw new Error(uploadData.error || "Failed to upload avatar");
+      }
+
+      // Set the IPFS URL
+      const avatarUrl = `https://gateway.pinata.cloud/ipfs/${uploadData.cid}`;
+      console.log("✅ Avatar uploaded to IPFS:", avatarUrl);
+      
+      setProfilePicture(avatarUrl);
+    } catch (error) {
+      console.error("❌ Failed to upload avatar:", error);
+      alert(`Failed to upload avatar: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 

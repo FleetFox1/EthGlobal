@@ -5,6 +5,7 @@ import { UserProvider } from "@/lib/UserContext";
 import { Header } from "@/components/Header";
 import { LandingModalWrapper } from "@/components/LandingModalWrapper";
 import "./globals.css";
+import "./nft-effects.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

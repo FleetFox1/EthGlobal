@@ -1,0 +1,53 @@
+<svg width="600" height="800" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1f2937;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#111827;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <rect width="600" height="800" fill="url(#bgGradient)"/>
+  
+  <!-- Bug Icon (centered) -->
+  <g transform="translate(300, 400)">
+    <!-- Bug body -->
+    <ellipse cx="0" cy="0" rx="80" ry="100" fill="#ef4444" opacity="0.9"/>
+    <ellipse cx="0" cy="-60" rx="60" ry="60" fill="#ef4444" opacity="0.9"/>
+    
+    <!-- Spots -->
+    <circle cx="-30" cy="-10" r="15" fill="#7f1d1d" opacity="0.6"/>
+    <circle cx="25" cy="10" r="12" fill="#7f1d1d" opacity="0.6"/>
+    <circle cx="0" cy="30" r="18" fill="#7f1d1d" opacity="0.6"/>
+    
+    <!-- Antenna -->
+    <line x1="-20" y1="-100" x2="-35" y2="-130" stroke="#dc2626" stroke-width="4" stroke-linecap="round"/>
+    <line x1="20" y1="-100" x2="35" y2="-130" stroke="#dc2626" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="-35" cy="-130" r="8" fill="#fca5a5"/>
+    <circle cx="35" cy="-130" r="8" fill="#fca5a5"/>
+    
+    <!-- Legs (left side) -->
+    <line x1="-70" y1="-20" x2="-120" y2="-40" stroke="#dc2626" stroke-width="5" stroke-linecap="round"/>
+    <line x1="-70" y1="0" x2="-130" y2="0" stroke="#dc2626" stroke-width="5" stroke-linecap="round"/>
+    <line x1="-70" y1="20" x2="-120" y2="40" stroke="#dc2626" stroke-width="5" stroke-linecap="round"/>
+    
+    <!-- Legs (right side) -->
+    <line x1="70" y1="-20" x2="120" y2="-40" stroke="#dc2626" stroke-width="5" stroke-linecap="round"/>
+    <line x1="70" y1="0" x2="130" y2="0" stroke="#dc2626" stroke-width="5" stroke-linecap="round"/>
+    <line x1="70" y1="20" x2="120" y2="40" stroke="#dc2626" stroke-width="5" stroke-linecap="round"/>
+    
+    <!-- Eyes -->
+    <circle cx="-20" cy="-70" r="12" fill="#ffffff"/>
+    <circle cx="20" cy="-70" r="12" fill="#ffffff"/>
+    <circle cx="-18" cy="-68" r="8" fill="#1f2937"/>
+    <circle cx="22" cy="-68" r="8" fill="#1f2937"/>
+  </g>
+  
+  <!-- Text -->
+  <text x="300" y="680" font-family="Arial, sans-serif" font-size="24" fill="#9ca3af" text-anchor="middle" font-weight="bold">
+    PLACEHOLDER BUG
+  </text>
+  <text x="300" y="720" font-family="Arial, sans-serif" font-size="16" fill="#6b7280" text-anchor="middle">
+    Replace with actual bug screenshot
+  </text>
+</svg>

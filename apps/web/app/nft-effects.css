@@ -1,0 +1,299 @@
+/**
+ * Holographic & Foil Effects for NFT Cards
+ * Pokemon/Trading Card Style Animations
+ */
+
+/* ===========================================
+   RARITY FRAME CLASSES
+   ========================================== */
+
+/* Legendary - Orange/Red Holographic */
+.legendary-frame {
+  --rarity-glow: rgba(255, 107, 0, 0.6);
+  border: 3px solid transparent;
+  background: 
+    linear-gradient(#000, #000) padding-box,
+    linear-gradient(45deg, #ff6b00, #ff0844, #ffaa00, #ff0844) border-box;
+  position: relative;
+}
+
+.legendary-frame::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  background: linear-gradient(45deg, #ff6b00, #ff0844, #ffaa00, #ff0844);
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0.5;
+  filter: blur(10px);
+  animation: legendary-pulse 3s ease-in-out infinite;
+}
+
+/* Epic - Purple/Pink Gradient */
+.epic-frame {
+  --rarity-glow: rgba(168, 85, 247, 0.6);
+  border: 3px solid transparent;
+  background: 
+    linear-gradient(#000, #000) padding-box,
+    linear-gradient(135deg, #a855f7, #ec4899, #c026d3, #ec4899) border-box;
+  position: relative;
+}
+
+.epic-frame::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  background: linear-gradient(135deg, #a855f7, #ec4899, #c026d3);
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0.4;
+  filter: blur(8px);
+  animation: epic-pulse 2.5s ease-in-out infinite;
+}
+
+/* Rare - Blue/Cyan Shimmer */
+.rare-frame {
+  --rarity-glow: rgba(59, 130, 246, 0.6);
+  border: 3px solid transparent;
+  background: 
+    linear-gradient(#000, #000) padding-box,
+    linear-gradient(90deg, #3b82f6, #06b6d4, #3b82f6) border-box;
+  position: relative;
+}
+
+.rare-frame::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  background: linear-gradient(90deg, #3b82f6, #06b6d4, #3b82f6);
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0.3;
+  filter: blur(6px);
+  animation: rare-shimmer 2s linear infinite;
+}
+
+/* Uncommon - Green/Emerald */
+.uncommon-frame {
+  --rarity-glow: rgba(34, 197, 94, 0.5);
+  border: 3px solid transparent;
+  background: 
+    linear-gradient(#000, #000) padding-box,
+    linear-gradient(180deg, #22c55e, #10b981, #22c55e) border-box;
+  position: relative;
+}
+
+.uncommon-frame::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  background: linear-gradient(180deg, #22c55e, #10b981);
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0.25;
+  filter: blur(5px);
+}
+
+/* Common - Gray Standard */
+.common-frame {
+  --rarity-glow: rgba(107, 114, 128, 0.4);
+  border: 2px solid #6b7280;
+  position: relative;
+}
+
+.common-frame::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: #6b7280;
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0.2;
+  filter: blur(4px);
+}
+
+/* ===========================================
+   HOLOGRAPHIC SHIMMER OVERLAYS
+   ========================================== */
+
+.holographic-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 25%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0.1) 75%,
+    transparent 100%
+  );
+  background-size: 200% 200%;
+  animation: shimmer-sweep 8s linear infinite;
+  mix-blend-mode: overlay;
+}
+
+/* Rarity-specific shimmer colors */
+.legendary-shimmer {
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(255, 170, 0, 0.3) 25%,
+    rgba(255, 107, 0, 0.5) 50%,
+    rgba(255, 8, 68, 0.3) 75%,
+    transparent 100%
+  );
+  background-size: 200% 200%;
+}
+
+.epic-shimmer {
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(168, 85, 247, 0.3) 25%,
+    rgba(236, 72, 153, 0.4) 50%,
+    rgba(192, 38, 211, 0.3) 75%,
+    transparent 100%
+  );
+  background-size: 200% 200%;
+}
+
+.rare-shimmer {
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(59, 130, 246, 0.3) 25%,
+    rgba(6, 182, 212, 0.4) 50%,
+    rgba(59, 130, 246, 0.3) 75%,
+    transparent 100%
+  );
+  background-size: 200% 200%;
+}
+
+.uncommon-shimmer {
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(34, 197, 94, 0.2) 25%,
+    rgba(16, 185, 129, 0.3) 50%,
+    rgba(34, 197, 94, 0.2) 75%,
+    transparent 100%
+  );
+  background-size: 200% 200%;
+}
+
+/* ===========================================
+   FOIL SHINE EFFECT (on hover)
+   ========================================== */
+
+.foil-shine {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(255, 255, 255, 0.4) 0%,
+    rgba(255, 255, 255, 0.2) 20%,
+    transparent 60%
+  );
+  mix-blend-mode: overlay;
+  animation: foil-rotate 3s ease-in-out infinite;
+}
+
+/* ===========================================
+   KEYFRAME ANIMATIONS
+   ========================================== */
+
+@keyframes shimmer-sweep {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes legendary-pulse {
+  0%, 100% {
+    opacity: 0.5;
+    filter: blur(10px);
+  }
+  50% {
+    opacity: 0.8;
+    filter: blur(15px);
+  }
+}
+
+@keyframes epic-pulse {
+  0%, 100% {
+    opacity: 0.4;
+    filter: blur(8px);
+  }
+  50% {
+    opacity: 0.6;
+    filter: blur(12px);
+  }
+}
+
+@keyframes rare-shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes foil-rotate {
+  0% {
+    background-position: 0% 0%;
+  }
+  25% {
+    background-position: 100% 100%;
+  }
+  50% {
+    background-position: 100% 0%;
+  }
+  75% {
+    background-position: 0% 100%;
+  }
+  100% {
+    background-position: 0% 0%;
+  }
+}
+
+/* ===========================================
+   RESPONSIVE ADJUSTMENTS
+   ========================================== */
+
+@media (max-width: 640px) {
+  .legendary-frame,
+  .epic-frame,
+  .rare-frame,
+  .uncommon-frame {
+    border-width: 2px;
+  }
+
+  .legendary-frame::before,
+  .epic-frame::before,
+  .rare-frame::before,
+  .uncommon-frame::before {
+    inset: -2px;
+    filter: blur(6px);
+  }
+}
+
+/* ===========================================
+   ACCESSIBILITY - Reduced Motion
+   ========================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .holographic-shimmer,
+  .foil-shine,
+  .legendary-frame::before,
+  .epic-frame::before,
+  .rare-frame::before {
+    animation: none;
+  }
+}

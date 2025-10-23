@@ -129,9 +129,9 @@ export default function ConservationPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
             <Card className="bg-gray-900 border-gray-800 p-6 text-center space-y-3">
               <div className="text-4xl">💰</div>
-              <h4 className="text-lg font-semibold">Platform Fees</h4>
+              <h4 className="text-lg font-semibold">Funding Conservation</h4>
               <p className="text-sm text-gray-400">
-                10% of all unlock fees go directly to conservation organizations
+                A portion of platform unlock fees supports conservation organizations and bug research initiatives
               </p>
             </Card>
 
@@ -152,10 +152,38 @@ export default function ConservationPage() {
             </Card>
           </div>
 
+          {/* Where Your Money Goes */}
+          <div className="mb-16 bg-gradient-to-br from-green-500/5 to-blue-500/5 border border-green-500/20 rounded-xl p-8">
+            <h3 className="text-2xl font-bold mb-4 text-center">Where Your $1 Goes</h3>
+            <p className="text-gray-400 text-center mb-6 max-w-2xl mx-auto">
+              When you unlock the BugDex faucet for $1, here&apos;s how those funds are used:
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">⛽</div>
+                <div>
+                  <h4 className="font-semibold mb-1">Gas Pool (Majority)</h4>
+                  <p className="text-sm text-gray-400">
+                    Funds gasless transactions so you can submit bugs, vote, and mint NFTs without paying gas fees
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">🌿</div>
+                <div>
+                  <h4 className="font-semibold mb-1">Conservation (Portion)</h4>
+                  <p className="text-sm text-gray-400">
+                    A portion supports bug conservation organizations and citizen science research initiatives
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Partner Organizations */}
           <h3 className="text-3xl font-bold mb-8 text-center">Conservation Partners</h3>
           <p className="text-center text-gray-400 mb-8">
-            We&apos;re proud to support these organizations working to protect insects worldwide
+            Organizations we plan to support as the platform grows
           </p>
 
           <div className="space-y-6">

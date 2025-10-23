@@ -40,7 +40,8 @@ export default function AboutPage() {
           <p className="text-muted-foreground mb-4">
             BugDex is a mobile-first Web3 app where users can scan real-world bugs using their phone camera, 
             mint them as collectible NFTs, and trade them with other collectors. Our community-driven voting 
-            system ensures authenticity and rewards active participants.
+            system ensures authenticity and rewards active participants. A portion of platform fees supports 
+            bug conservation efforts worldwide.
           </p>
         </section>
 

@@ -233,11 +233,15 @@ export function UnlockFaucetModal({
           )}
 
           {/* Info */}
-          <div className="text-xs text-muted-foreground text-center space-y-2">
-            <p>
-              Funds support gas pool for gasless operations. This is a one-time payment.
-            </p>
-            <p className="text-amber-600 dark:text-amber-400">
+          <div className="text-xs text-muted-foreground space-y-2">
+            <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded p-3">
+              <p className="font-semibold text-blue-900 dark:text-blue-300 mb-1">Where Your $1 Goes:</p>
+              <ul className="space-y-1 text-blue-800 dark:text-blue-400">
+                <li>• <strong>Gas Pool:</strong> Enables gasless transactions for you and others</li>
+                <li>• <strong>Conservation:</strong> Supports bug conservation organizations</li>
+              </ul>
+            </div>
+            <p className="text-amber-600 dark:text-amber-400 text-center">
               <strong>Note:</strong> BUG tokens have no monetary value and cannot be exchanged for fiat or cryptocurrency.
             </p>
           </div>

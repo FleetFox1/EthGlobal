@@ -231,8 +231,14 @@ export default function ConservationPage() {
                 these incredible organizations in their mission to protect our planet&apos;s smallest heroes.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/">
+                <Link href="/donate">
                   <Button className="bg-gradient-to-r from-green-500 to-emerald-600 hover:opacity-90">
+                    <Heart className="w-5 h-5 mr-2" fill="currentColor" />
+                    Donate to Conservation
+                  </Button>
+                </Link>
+                <Link href="/">
+                  <Button variant="outline" className="border-gray-700">
                     Start Discovering Bugs
                   </Button>
                 </Link>

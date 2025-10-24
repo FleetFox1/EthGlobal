@@ -260,27 +260,27 @@ export default function AdminPage() {
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <div className="text-center p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                <div className="text-3xl font-bold text-gray-600">{dbStats.submissions.notSubmitted}</div>
-                <div className="text-sm text-muted-foreground mt-1">Not Submitted</div>
-                <div className="text-xs text-muted-foreground mt-1">Awaiting vote</div>
+                <div className="text-3xl font-bold text-gray-600">{dbStats.submissions?.total || 0}</div>
+                <div className="text-sm text-muted-foreground mt-1">Total Submitted</div>
+                <div className="text-xs text-muted-foreground mt-1">All time</div>
               </div>
               <div className="text-center p-4 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <div className="text-3xl font-bold text-blue-600">{dbStats.submissions.pendingVoting}</div>
+                <div className="text-3xl font-bold text-blue-600">{dbStats.submissions?.pendingVoting || 0}</div>
                 <div className="text-sm text-muted-foreground mt-1">Pending Voting</div>
-                <div className="text-xs text-muted-foreground mt-1">3-day period</div>
+                <div className="text-xs text-muted-foreground mt-1">Active now</div>
               </div>
               <div className="text-center p-4 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                <div className="text-3xl font-bold text-green-600">{dbStats.submissions.approved}</div>
+                <div className="text-3xl font-bold text-green-600">{dbStats.submissions?.approved || 0}</div>
                 <div className="text-sm text-muted-foreground mt-1">Approved</div>
                 <div className="text-xs text-muted-foreground mt-1">Can mint NFT</div>
               </div>
               <div className="text-center p-4 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                <div className="text-3xl font-bold text-red-600">{dbStats.submissions.rejected}</div>
+                <div className="text-3xl font-bold text-red-600">{dbStats.submissions?.rejected || 0}</div>
                 <div className="text-sm text-muted-foreground mt-1">Rejected</div>
                 <div className="text-xs text-muted-foreground mt-1">Failed vote</div>
               </div>
               <div className="text-center p-4 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                <div className="text-3xl font-bold text-purple-600">{dbStats.submissions.minted}</div>
+                <div className="text-3xl font-bold text-purple-600">{dbStats.submissions?.minted || 0}</div>
                 <div className="text-sm text-muted-foreground mt-1">Minted</div>
                 <div className="text-xs text-muted-foreground mt-1">On blockchain</div>
               </div>

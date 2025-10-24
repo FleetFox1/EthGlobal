@@ -20,12 +20,70 @@ import {
   AlertTriangle,
   Shield,
   Sparkles,
-  Info
+  Info,
+  Timer
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useUser } from "@/lib/useUser";
 import { ethers } from "ethers";
+import { getRarityFromScore } from "@/types/rarityTiers";
+
+// Helper to get background color class from rarity
+function getRarityBgColor(rarityName: string): string {
+  switch (rarityName) {
+    case "Legendary": return "bg-gradient-to-br from-orange-400 to-red-500";
+    case "Epic": return "bg-gradient-to-br from-purple-400 to-pink-500";
+    case "Rare": return "bg-gradient-to-br from-blue-400 to-cyan-500";
+    case "Uncommon": return "bg-gradient-to-br from-green-400 to-emerald-500";
+    case "Common": return "bg-gradient-to-br from-gray-300 to-gray-400";
+    default: return "bg-gray-500";
+  }
+}
+
+// Countdown Timer Component
+function CountdownTimer({ deadline }: { deadline: string }) {
+  const [timeLeft, setTimeLeft] = useState('');
+  const [isExpired, setIsExpired] = useState(false);
+
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      const now = new Date().getTime();
+      const end = new Date(deadline).getTime();
+      const distance = end - now;
+
+      if (distance < 0) {
+        setIsExpired(true);
+        setTimeLeft('Voting ended');
+        return;
+      }
+
+      const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+      if (days > 0) {
+        setTimeLeft(`${days}d ${hours}h ${minutes}m`);
+      } else if (hours > 0) {
+        setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+      } else {
+        setTimeLeft(`${minutes}m ${seconds}s`);
+      }
+    };
+
+    calculateTimeLeft();
+    const interval = setInterval(calculateTimeLeft, 1000);
+    return () => clearInterval(interval);
+  }, [deadline]);
+
+  return (
+    <div className={`flex items-center gap-1 ${isExpired ? 'text-gray-500' : 'text-blue-600 font-semibold'}`}>
+      <Timer className="h-3 w-3" />
+      <span className="text-xs">{timeLeft}</span>
+    </div>
+  );
+}
 
 // NFT Rarity tiers based on net vote score
 type RarityTier = 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary';
@@ -363,6 +421,12 @@ export default function CollectionPage() {
   const submitForVoting = async (upload: UserUpload) => {
     if (!walletAddress) return;
 
+    // Prevent duplicate submissions
+    if (upload.votingStatus && upload.votingStatus !== 'not_submitted') {
+      console.log('⚠️ Already submitted for voting');
+      return;
+    }
+
     setSubmitting(upload.id);
 
     try {
@@ -386,9 +450,23 @@ export default function CollectionPage() {
       console.log('✅ Submitted for voting!', data.data);
 
       const deadline = new Date(data.data.votingDeadline);
-      alert(`Bug submitted for community voting! 🎉\n\n✅ Submission is FREE (no gas cost)\n🗳️ Voting period: 3 days\n⏰ Ends: ${deadline.toLocaleString()}\n\nCommunity members can now vote on your discovery!`);
+      
+      // Immediately update local state to show pending status
+      setUploads(prev => prev.map(u => 
+        u.id === upload.id 
+          ? { 
+              ...u, 
+              votingStatus: 'pending_voting',
+              votingDeadline: data.data.votingDeadline,
+              votesFor: 0,
+              votesAgainst: 0
+            }
+          : u
+      ));
 
-      // Reload uploads to show updated status
+      alert(`Bug submitted for community voting! 🎉\n\n✅ Submission is FREE (no gas cost)\n🗳️ Voting period starts now\n⏰ Ends: ${deadline.toLocaleString()}\n\nCommunity members can now vote on your discovery!`);
+
+      // Reload uploads to get fresh data from server
       await loadUploads();
     } catch (error) {
       const err = error as Error;
@@ -551,15 +629,35 @@ export default function CollectionPage() {
 
         {/* Grid of uploads */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {uploads.map((upload) => (
-            <Card 
-              key={upload.id} 
-              className="overflow-hidden cursor-pointer hover:shadow-xl transition-shadow"
-              onClick={() => {
-                setSelectedBug(upload);
-                setIsModalOpen(true);
-              }}
-            >
+          {uploads.map((upload) => {
+            // Calculate rarity and status-based styling
+            const netVotes = (upload.votesFor || 0) - (upload.votesAgainst || 0);
+            const rarity = getRarityFromScore(netVotes);
+            const isVoting = upload.votingStatus === 'pending_voting';
+            const isApproved = upload.votingStatus === 'approved' || upload.votingApproved;
+            const isRejected = upload.votingStatus === 'rejected';
+            
+            // Dynamic border and shadow based on status
+            let cardClasses = "overflow-hidden cursor-pointer transition-all duration-300 ";
+            if (isVoting) {
+              cardClasses += "border-2 border-yellow-400 shadow-lg shadow-yellow-200 dark:shadow-yellow-900/30";
+            } else if (isRejected) {
+              cardClasses += "border-2 border-red-400 opacity-70";
+            } else if (isApproved) {
+              cardClasses += `border-2 ${rarity.cssClass || 'border-green-500'} hover:shadow-2xl`;
+            } else {
+              cardClasses += "border border-border hover:shadow-xl";
+            }
+
+            return (
+              <Card 
+                key={upload.id} 
+                className={cardClasses}
+                onClick={() => {
+                  setSelectedBug(upload);
+                  setIsModalOpen(true);
+                }}
+              >
               {/* Image */}
               <div className="relative aspect-square bg-muted">
                 <img
@@ -572,16 +670,48 @@ export default function CollectionPage() {
                     (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23e5e7eb" width="100" height="100"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af"%3EImage%3C/text%3E%3C/svg%3E';
                   }}
                 />
+                
+                {/* Status Badges */}
+                {isVoting && (
+                  <div className="absolute top-2 right-2 bg-yellow-500 text-white px-2 py-1 rounded-full text-xs flex items-center gap-1 font-semibold animate-pulse">
+                    <Info className="h-3 w-3" />
+                    Voting
+                  </div>
+                )}
+                
+                {isApproved && !upload.submittedToBlockchain && (
+                  <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs flex items-center gap-1 font-semibold">
+                    <CheckCircle className="h-3 w-3" />
+                    Approved
+                  </div>
+                )}
+                
+                {isRejected && (
+                  <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    Rejected
+                  </div>
+                )}
+                
                 {upload.submittedToBlockchain && (
-                  <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs flex items-center gap-1">
+                  <div className="absolute top-2 right-2 bg-purple-500 text-white px-2 py-1 rounded-full text-xs flex items-center gap-1">
                     <CheckCircle className="h-3 w-3" />
                     On-Chain
                   </div>
                 )}
+                
                 {upload.bugInfo && upload.bugInfo.confidence > 0.7 && (
                   <div className="absolute top-2 left-2 bg-blue-500 text-white px-2 py-1 rounded-full text-xs flex items-center gap-1">
                     <Sparkles className="h-3 w-3" />
                     AI ID
+                  </div>
+                )}
+                
+                {/* Rarity Badge (bottom) - shown after voting ends */}
+                {(isApproved || upload.submittedToBlockchain) && (
+                  <div className={`absolute bottom-2 left-2 px-3 py-1 rounded-full text-xs font-bold shadow-lg ${getRarityBgColor(rarity.name)} text-white flex items-center gap-1`}>
+                    <span>{rarity.emoji}</span>
+                    <span>{rarity.name}</span>
                   </div>
                 )}
               </div>
@@ -703,23 +833,28 @@ export default function CollectionPage() {
                     
                     {/* Currently in voting */}
                     {upload.votingStatus === 'pending_voting' && upload.votingDeadline && (
-                      <div className="text-sm bg-blue-50 dark:bg-blue-950 p-3 rounded-md border border-blue-200 dark:border-blue-800">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Info className="h-4 w-4 text-blue-600" />
-                          <span className="font-semibold">🗳️ In Community Voting</span>
+                      <div className="text-sm bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-950 dark:to-orange-950 p-3 rounded-md border-2 border-yellow-400 dark:border-yellow-600">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Info className="h-4 w-4 text-yellow-600" />
+                            <span className="font-semibold text-yellow-900 dark:text-yellow-100">🗳️ Active Voting</span>
+                          </div>
+                          <CountdownTimer deadline={upload.votingDeadline} />
                         </div>
-                        <div className="text-xs space-y-1 mt-2">
-                          <div className="flex justify-between">
-                            <span>Votes For:</span>
-                            <span className="font-semibold text-green-600">{upload.votesFor || 0}</span>
+                        
+                        <div className="grid grid-cols-2 gap-2 mb-2">
+                          <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded border border-green-300 dark:border-green-700">
+                            <div className="text-xs text-green-700 dark:text-green-300">For</div>
+                            <div className="text-lg font-bold text-green-600">{upload.votesFor || 0}</div>
                           </div>
-                          <div className="flex justify-between">
-                            <span>Votes Against:</span>
-                            <span className="font-semibold text-red-600">{upload.votesAgainst || 0}</span>
+                          <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded border border-red-300 dark:border-red-700">
+                            <div className="text-xs text-red-700 dark:text-red-300">Against</div>
+                            <div className="text-lg font-bold text-red-600">{upload.votesAgainst || 0}</div>
                           </div>
-                          <div className="pt-1 border-t border-blue-200 dark:border-blue-700">
-                            <span>Ends: {new Date(upload.votingDeadline).toLocaleDateString()}</span>
-                          </div>
+                        </div>
+                        
+                        <div className="text-xs text-center text-yellow-800 dark:text-yellow-200 bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded">
+                          Net Score: <span className="font-bold">{(upload.votesFor || 0) - (upload.votesAgainst || 0)}</span>
                         </div>
                       </div>
                     )}
@@ -888,7 +1023,8 @@ export default function CollectionPage() {
                 )}
               </div>
             </Card>
-          ))}
+            );
+          })}
         </div>
       </div>
 

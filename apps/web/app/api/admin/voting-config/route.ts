@@ -84,11 +84,23 @@ export async function POST(request: NextRequest) {
       admin_wallet,
     } = body;
 
-    // Admin verification
-    const adminWallet = process.env.NEXT_PUBLIC_ADMIN_WALLET?.toLowerCase();
-    if (!admin_wallet || admin_wallet.toLowerCase() !== adminWallet) {
+    // Admin verification - check against admin list (same as useAdmin hook)
+    const adminAddresses = process.env.NEXT_PUBLIC_ADMIN_ADDRESSES?.split(',').map(addr => addr.trim().toLowerCase()) || [];
+    const isAdmin = admin_wallet && adminAddresses.includes(admin_wallet.toLowerCase());
+    
+    console.log('🔐 Admin check:', {
+      provided: admin_wallet?.toLowerCase(),
+      adminList: adminAddresses,
+      isAdmin,
+    });
+    
+    if (!isAdmin) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized: Admin access required' },
+        { 
+          success: false, 
+          error: 'Unauthorized: Admin access required',
+          hint: 'Your wallet must be in NEXT_PUBLIC_ADMIN_ADDRESSES environment variable'
+        },
         { status: 403 }
       );
     }

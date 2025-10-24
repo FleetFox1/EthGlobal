@@ -142,31 +142,30 @@ export async function GET(request: NextRequest) {
 
     const walletAddress = address.toLowerCase();
 
-    // Fetch from database with voting data
+    // Fetch from database with voting data (voting columns are in uploads table)
     const result = await sql`
       SELECT 
-        u.id,
-        u.wallet_address as discoverer,
-        u.image_cid as "imageCid",
-        u.metadata_cid as "metadataCid",
-        u.image_url as "imageUrl",
-        u.metadata_url as "metadataUrl",
-        u.timestamp,
-        u.location,
-        u.bug_info as "bugInfo",
-        u.submitted_to_blockchain as "submittedToBlockchain",
-        u.submission_id as "submissionId",
-        u.transaction_hash as "transactionHash",
-        bs.voting_status as "votingStatus",
-        bs.votes_for as "votesFor",
-        bs.votes_against as "votesAgainst",
-        bs.voting_deadline as "votingDeadline",
-        bs.voting_resolved as "votingResolved",
-        bs.voting_approved as "votingApproved"
-      FROM uploads u
-      LEFT JOIN bug_submissions bs ON u.id = bs.upload_id
-      WHERE u.wallet_address = ${walletAddress}
-      ORDER BY u.timestamp DESC
+        id,
+        wallet_address as discoverer,
+        image_cid as "imageCid",
+        metadata_cid as "metadataCid",
+        image_url as "imageUrl",
+        metadata_url as "metadataUrl",
+        timestamp,
+        location,
+        bug_info as "bugInfo",
+        submitted_to_blockchain as "submittedToBlockchain",
+        submission_id as "submissionId",
+        transaction_hash as "transactionHash",
+        voting_status as "votingStatus",
+        votes_for as "votesFor",
+        votes_against as "votesAgainst",
+        voting_deadline as "votingDeadline",
+        voting_resolved as "votingResolved",
+        voting_approved as "votingApproved"
+      FROM uploads
+      WHERE wallet_address = ${walletAddress}
+      ORDER BY timestamp DESC
     `;
 
     const uploads = result.rows.map(row => ({
@@ -182,7 +181,7 @@ export async function GET(request: NextRequest) {
       submittedToBlockchain: row.submittedToBlockchain,
       submissionId: row.submissionId,
       transactionHash: row.transactionHash,
-      // Voting data from bug_submissions
+      // Voting data directly from uploads table
       votingStatus: row.votingStatus || 'not_submitted',
       votesFor: row.votesFor || 0,
       votesAgainst: row.votesAgainst || 0,

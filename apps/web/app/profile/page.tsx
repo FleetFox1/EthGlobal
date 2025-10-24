@@ -74,50 +74,203 @@ export default function ProfileV2() {
   useEffect(() => {
     if (profile) {
       setUsername(profile.username || "");
-      // Load other settings from profile when available
+      // Load bio if available from profile
+      if (profile.bio) {
+        setBio(profile.bio);
+      }
     }
   }, [profile]);
 
+  // Load settings from localStorage
+  useEffect(() => {
+    if (address) {
+      try {
+        const savedSettings = localStorage.getItem(`bugdex_settings_${address}`);
+        if (savedSettings) {
+          const settings = JSON.parse(savedSettings);
+          
+          // Load notification settings
+          if (settings.notifications) {
+            setEmailNotifications(settings.notifications.email ?? true);
+            setVoteNotifications(settings.notifications.votes ?? true);
+            setMintNotifications(settings.notifications.mints ?? true);
+          }
+          
+          // Load privacy settings
+          if (settings.privacy) {
+            setPublicCollection(settings.privacy.publicCollection ?? true);
+            setShowWalletAddress(settings.privacy.showWalletAddress ?? false);
+            setShareLocation(settings.privacy.shareLocation ?? true);
+          }
+          
+          // Load display settings
+          if (settings.display) {
+            setTheme(settings.display.theme || "dark");
+            setCurrency(settings.display.currency || "USD");
+          }
+          
+          // Load blockchain settings
+          if (settings.blockchain) {
+            setDefaultPayment(settings.blockchain.defaultPayment || "ETH");
+          }
+          
+          console.log("📥 Loaded settings from localStorage");
+        }
+      } catch (error) {
+        console.error("Failed to load settings:", error);
+      }
+    }
+  }, [address]);
+
   const handleSaveProfile = async () => {
+    if (!address) {
+      console.error("No wallet address available");
+      return;
+    }
+
     setSaving(true);
     setSaved(false);
     
     try {
-      // TODO: Save profile settings to backend/blockchain
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate save
+      // Prepare settings object
+      const settings = {
+        notifications: {
+          email: emailNotifications,
+          votes: voteNotifications,
+          mints: mintNotifications,
+        },
+        privacy: {
+          publicCollection,
+          showWalletAddress,
+          shareLocation,
+        },
+        display: {
+          theme,
+          currency,
+        },
+        blockchain: {
+          defaultPayment,
+        },
+      };
+
+      // Save to localStorage for immediate access
+      localStorage.setItem(`bugdex_settings_${address}`, JSON.stringify(settings));
       
-      console.log("Saving profile:", {
-        username,
-        bio,
-        profilePicture,
-        emailNotifications,
-        voteNotifications,
-        mintNotifications,
-        publicCollection,
-        showWalletAddress,
-        shareLocation,
-        theme,
-        currency,
-        defaultPayment,
+      console.log("💾 Saving profile for:", address);
+      
+      // Save basic profile data to database
+      const response = await fetch('/api/user/update-profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          address,
+          username: username || profile?.username,
+          bio,
+          avatarUrl: profilePicture || undefined,
+        }),
       });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to save profile');
+      }
+
+      console.log("✅ Profile saved successfully");
+      
+      // Optionally: Upload settings to IPFS for decentralized storage
+      if (settings) {
+        try {
+          const ipfsResponse = await fetch('/api/upload-profile', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              walletAddress: address,
+              profileData: {
+                username: username || profile?.username,
+                bio,
+                settings,
+              },
+            }),
+          });
+
+          if (ipfsResponse.ok) {
+            const ipfsData = await ipfsResponse.json();
+            console.log("📦 Settings backed up to IPFS:", ipfsData.ipfsHash);
+          }
+        } catch (ipfsError) {
+          console.warn("⚠️ IPFS backup failed (non-critical):", ipfsError);
+        }
+      }
       
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
-      console.error("Failed to save profile:", error);
+      console.error("❌ Failed to save profile:", error);
+      alert(error instanceof Error ? error.message : "Failed to save profile. Please try again.");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleProfilePictureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProfilePictureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file) return;
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File size must be less than 5MB");
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert("Please select an image file");
+      return;
+    }
+
+    try {
+      // Create preview immediately
       const reader = new FileReader();
       reader.onloadend = () => {
         setProfilePicture(reader.result as string);
       };
       reader.readAsDataURL(file);
+
+      // Optionally upload to IPFS for permanent storage
+      if (address) {
+        console.log("📤 Uploading avatar to IPFS...");
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('walletAddress', address);
+
+        try {
+          const uploadResponse = await fetch('/api/upload-avatar', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (uploadResponse.ok) {
+            const uploadData = await uploadResponse.json();
+            console.log("✅ Avatar uploaded to IPFS:", uploadData.ipfsHash);
+            
+            // Store IPFS URL instead of base64
+            if (uploadData.url) {
+              setProfilePicture(uploadData.url);
+            }
+          }
+        } catch (uploadError) {
+          console.warn("⚠️ IPFS upload failed, using local preview:", uploadError);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to process profile picture:", error);
+      alert("Failed to upload profile picture. Please try again.");
     }
   };
 

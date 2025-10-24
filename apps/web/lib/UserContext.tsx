@@ -14,10 +14,12 @@ import {
 export interface UserProfile {
   address: string;
   username: string;
+  bio?: string;
   email?: string;
   createdAt: number;
   lastLogin: number;
   privyUserId?: string;
+  avatarUrl?: string;
   // IPFS profile data
   ipfsProfile?: IPFSUserProfile;
   ipfsHash?: string;

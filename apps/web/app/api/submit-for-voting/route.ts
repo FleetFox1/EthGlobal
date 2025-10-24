@@ -57,8 +57,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Set voting deadline (3 days from now)
-    const votingDeadline = new Date(Date.now() + (3 * 24 * 60 * 60 * 1000));
+    // Get voting config (dynamic duration)
+    const configResult = await sql`
+      SELECT voting_duration_hours, voting_enabled
+      FROM voting_config
+      ORDER BY updated_at DESC
+      LIMIT 1
+    `;
+
+    const config = configResult.rows[0] || {
+      voting_duration_hours: 72, // 3 days default
+      voting_enabled: true,
+    };
+
+    // Check if voting is enabled
+    if (!config.voting_enabled) {
+      return NextResponse.json(
+        { error: "Voting is currently disabled" },
+        { status: 503 }
+      );
+    }
+
+    // Calculate voting deadline using dynamic duration
+    const durationMs = config.voting_duration_hours * 60 * 60 * 1000;
+    const votingDeadline = new Date(Date.now() + durationMs);
 
     // Update upload to pending_voting status
     await sql`
@@ -73,7 +95,13 @@ export async function POST(request: NextRequest) {
       WHERE id = ${uploadId}
     `;
 
-    console.log("✅ Submitted for voting! Deadline:", new Date(votingDeadline));
+    const durationText = config.voting_duration_hours >= 24 
+      ? `${Math.floor(config.voting_duration_hours / 24)} day${Math.floor(config.voting_duration_hours / 24) > 1 ? 's' : ''}`
+      : config.voting_duration_hours >= 1
+      ? `${Math.floor(config.voting_duration_hours)} hour${Math.floor(config.voting_duration_hours) > 1 ? 's' : ''}`
+      : `${Math.floor(config.voting_duration_hours * 60)} minute${Math.floor(config.voting_duration_hours * 60) > 1 ? 's' : ''}`;
+
+    console.log(`✅ Submitted for voting! Duration: ${config.voting_duration_hours}h, Deadline:`, votingDeadline);
 
     return NextResponse.json({
       success: true,
@@ -81,7 +109,8 @@ export async function POST(request: NextRequest) {
         uploadId,
         votingStatus: "pending_voting",
         votingDeadline,
-        message: "Bug submitted for community voting! Voting is free and lasts 3 days.",
+        votingDurationHours: config.voting_duration_hours,
+        message: `Bug submitted for community voting! Voting is free and lasts ${durationText}.`,
       },
     });
   } catch (error: any) {

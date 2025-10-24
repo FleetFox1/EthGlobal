@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
+import VotingConfig from "@/components/VotingConfig";
 
 export default function AdminPage() {
   const { isAdmin, isOwner, loading, walletAddress, isAuthenticated } = useAdmin();
@@ -293,7 +294,7 @@ export default function AdminPage() {
         )}
 
         {/* Admin Actions */}
-        <Card className="p-6">
+        <Card className="p-6 mb-8">
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
             <Settings className="h-5 w-5" />
             Admin Actions
@@ -303,12 +304,6 @@ export default function AdminPage() {
               <div className="text-left">
                 <p className="font-semibold">Manage Minters</p>
                 <p className="text-sm text-muted-foreground">Add or remove authorized minters</p>
-              </div>
-            </Button>
-            <Button variant="outline" className="justify-start h-auto py-4">
-              <div className="text-left">
-                <p className="font-semibold">Voting Parameters</p>
-                <p className="text-sm text-muted-foreground">Update voting rules and rewards</p>
               </div>
             </Button>
             <Button variant="outline" className="justify-start h-auto py-4">
@@ -325,6 +320,9 @@ export default function AdminPage() {
             </Button>
           </div>
         </Card>
+
+        {/* Voting Configuration */}
+        <VotingConfig adminWallet={walletAddress || ''} />
 
         {/* Contract Addresses */}
         <Card className="p-6 mt-8">

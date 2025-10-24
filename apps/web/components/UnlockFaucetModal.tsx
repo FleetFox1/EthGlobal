@@ -30,17 +30,24 @@ export function UnlockFaucetModal({
   const [error, setError] = useState<string | null>(null);
 
   const handleUnlockWithETH = async () => {
-    if (!window.ethereum) {
-      setError("Please install MetaMask");
-      return;
-    }
-
     setLoading(true);
     setError(null);
     setPaymentMethod("eth");
 
     try {
+      // Check for wallet provider (works on mobile MetaMask and desktop)
+      if (!window.ethereum) {
+        throw new Error("Please install MetaMask or use MetaMask mobile browser");
+      }
+
       const provider = new ethers.BrowserProvider(window.ethereum);
+      
+      // On mobile, ensure we're using the already-connected wallet
+      const signerAddress = await provider.getSigner().then(s => s.getAddress()).catch(() => null);
+      if (signerAddress && signerAddress.toLowerCase() !== walletAddress.toLowerCase()) {
+        throw new Error("Please connect the correct wallet");
+      }
+      
       const signer = await provider.getSigner();
 
       // Use V2 contract for unlock functionality
@@ -75,17 +82,24 @@ export function UnlockFaucetModal({
   };
 
   const handleUnlockWithPYUSD = async () => {
-    if (!window.ethereum) {
-      setError("Please install MetaMask");
-      return;
-    }
-
     setLoading(true);
     setError(null);
     setPaymentMethod("pyusd");
 
     try {
+      // Check for wallet provider (works on mobile MetaMask and desktop)
+      if (!window.ethereum) {
+        throw new Error("Please install MetaMask or use MetaMask mobile browser");
+      }
+
       const provider = new ethers.BrowserProvider(window.ethereum);
+      
+      // On mobile, ensure we're using the already-connected wallet
+      const signerAddress = await provider.getSigner().then(s => s.getAddress()).catch(() => null);
+      if (signerAddress && signerAddress.toLowerCase() !== walletAddress.toLowerCase()) {
+        throw new Error("Please connect the correct wallet");
+      }
+      
       const signer = await provider.getSigner();
 
       // Use V2 contract for unlock functionality

@@ -69,9 +69,28 @@ export function UnlockFaucetModal({
       });
 
       console.log("⏳ Waiting for confirmation...");
-      await tx.wait();
+      const receipt = await tx.wait();
 
       console.log("✅ Faucet unlocked!");
+      
+      // Record unlock in database for mobile compatibility
+      try {
+        await fetch('/api/faucet/record-unlock', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            walletAddress: walletAddress,
+            paymentMethod: 'ETH',
+            transactionHash: receipt.hash,
+            amount: '0.00033'
+          })
+        });
+        console.log('✅ Unlock recorded in database');
+      } catch (dbError) {
+        console.warn('Failed to record unlock in database:', dbError);
+        // Don't fail the whole operation if DB record fails
+      }
+      
       onSuccess();
     } catch (error: any) {
       console.error("Failed to unlock:", error);
@@ -130,9 +149,28 @@ export function UnlockFaucetModal({
       const tx = await bugToken.unlockWithPYUSD();
 
       console.log("⏳ Waiting for confirmation...");
-      await tx.wait();
+      const receipt = await tx.wait();
 
       console.log("✅ Faucet unlocked!");
+      
+      // Record unlock in database for mobile compatibility
+      try {
+        await fetch('/api/faucet/record-unlock', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            walletAddress: walletAddress,
+            paymentMethod: 'PYUSD',
+            transactionHash: receipt.hash,
+            amount: '1.0'
+          })
+        });
+        console.log('✅ Unlock recorded in database');
+      } catch (dbError) {
+        console.warn('Failed to record unlock in database:', dbError);
+        // Don't fail the whole operation if DB record fails
+      }
+      
       onSuccess();
     } catch (error: any) {
       console.error("Failed to unlock:", error);

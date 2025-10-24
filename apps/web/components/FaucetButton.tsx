@@ -23,24 +23,45 @@ export function FaucetButton() {
     }
 
     try {
-      if (!window.ethereum) return;
+      // Try contract call first (on-chain source of truth)
+      if (window.ethereum) {
+        try {
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_V2_ADDRESS || process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS;
+          
+          if (bugTokenAddress) {
+            const bugTokenABI = [
+              "function hasUnlocked(address) external view returns (bool)",
+            ];
 
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      // Use V2 contract for unlock functionality
-      const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_V2_ADDRESS || process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS;
+            const bugToken = new ethers.Contract(bugTokenAddress, bugTokenABI, provider);
+            const unlocked = await bugToken.hasUnlocked(walletAddress);
+            
+            console.log('✅ Contract unlock check:', unlocked);
+            setHasUnlocked(unlocked);
+            return; // Success, exit early
+          }
+        } catch (contractError) {
+          console.warn('⚠️ Contract call failed, checking database:', contractError);
+        }
+      }
+
+      // Fallback: Check database (for mobile compatibility)
+      console.log('📡 Checking database unlock status...');
+      const dbRes = await fetch(`/api/faucet/check-unlock?wallet=${walletAddress}`);
+      const dbData = await dbRes.json();
       
-      if (!bugTokenAddress) return;
-
-      const bugTokenABI = [
-        "function hasUnlocked(address) external view returns (bool)",
-      ];
-
-      const bugToken = new ethers.Contract(bugTokenAddress, bugTokenABI, provider);
-      const unlocked = await bugToken.hasUnlocked(walletAddress);
+      if (dbData.success && dbData.hasUnlocked) {
+        console.log('✅ Database shows unlocked');
+        setHasUnlocked(true);
+      } else {
+        console.log('❌ Not unlocked (database check)');
+        setHasUnlocked(false);
+      }
       
-      setHasUnlocked(unlocked);
     } catch (error) {
       console.error("Failed to check unlock status:", error);
+      setHasUnlocked(false); // Default to locked on error
     } finally {
       setCheckingUnlock(false);
     }

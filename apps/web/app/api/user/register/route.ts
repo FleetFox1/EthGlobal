@@ -19,6 +19,8 @@ interface UserProfile {
   createdAt: number;
   lastLogin: number;
   privyUserId?: string;
+  avatarUrl?: string;
+  bio?: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -64,6 +66,8 @@ export async function POST(request: NextRequest) {
         createdAt: new Date(existingUser.created_at).getTime(),
         lastLogin: now,
         privyUserId: privyUserId,
+        avatarUrl: existingUser.avatar_url,
+        bio: existingUser.bio,
       };
 
       return NextResponse.json({
@@ -151,6 +155,8 @@ export async function GET(request: NextRequest) {
       createdAt: new Date(dbUser.created_at).getTime(),
       lastLogin: new Date(dbUser.updated_at).getTime(),
       privyUserId: undefined,
+      avatarUrl: dbUser.avatar_url,
+      bio: dbUser.bio,
     };
 
     return NextResponse.json({

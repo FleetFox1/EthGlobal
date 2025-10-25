@@ -35,9 +35,11 @@ export function WalletButton({ variant = 'default' }: WalletButtonProps) {
   }
 
   if (isConnected && address) {
-    const avatarUrl = profile?.ipfsProfile?.avatar 
-      ? `https://gateway.lighthouse.storage/ipfs/${profile.ipfsProfile.avatar}`
-      : null;
+    // Try to get avatar from profile.avatarUrl first, fallback to IPFS profile
+    const avatarUrl = profile?.avatarUrl || 
+      (profile?.ipfsProfile?.avatar 
+        ? `https://gateway.lighthouse.storage/ipfs/${profile.ipfsProfile.avatar}`
+        : null);
 
     return (
       <DropdownMenu>

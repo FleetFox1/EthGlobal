@@ -18,6 +18,8 @@ export interface UserProfile {
   createdAt: number;
   lastLogin: number;
   privyUserId?: string;
+  avatarUrl?: string;
+  bio?: string;
   // IPFS profile data
   ipfsProfile?: IPFSUserProfile;
   ipfsHash?: string;

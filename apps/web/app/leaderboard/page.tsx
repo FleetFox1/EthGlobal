@@ -28,8 +28,19 @@ export default function LeaderboardPage() {
   const loadLeaderboard = async () => {
     setLoading(true);
     try {
-      // For now, create mock data with realistic values
-      // TODO: Replace with real API call to fetch users and their stats
+      // Fetch from API
+      const response = await fetch('/api/leaderboard');
+      const data = await response.json();
+
+      if (data.success) {
+        setLeaderboard(data.data);
+      } else {
+        throw new Error('Failed to fetch leaderboard');
+      }
+    } catch (error) {
+      console.error("Failed to load leaderboard:", error);
+      
+      // Fallback to mock data
       const mockData: LeaderboardEntry[] = [
         {
           rank: 1,
@@ -77,10 +88,7 @@ export default function LeaderboardPage() {
           score: 6522,
         },
       ];
-
       setLeaderboard(mockData);
-    } catch (error) {
-      console.error("Failed to load leaderboard:", error);
     } finally {
       setLoading(false);
     }

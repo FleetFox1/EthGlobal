@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@/lib/db/client';
+import { ethers } from 'ethers';
+import stakingABI from '@/lib/contracts/BugSubmissionStaking.json';
 
 /**
  * Resolve expired voting periods
@@ -62,6 +64,35 @@ export async function GET(request: NextRequest) {
       const bugRewards = approved ? votesFor * REWARD_PER_UPVOTE : 0;
       
       console.log(`📊 Resolving ${upload.id}: ${votesFor} FOR, ${votesAgainst} AGAINST = ${approved ? 'APPROVED' : 'REJECTED'}, Rewards: ${bugRewards} BUG`);
+      
+      // STEP: Call staking contract to distribute rewards or return stake
+      try {
+        const stakingContractAddress = process.env.NEXT_PUBLIC_STAKING_CONTRACT_ADDRESS;
+        const privateKey = process.env.STAKING_CONTRACT_PRIVATE_KEY; // Owner private key
+        
+        if (stakingContractAddress && privateKey) {
+          const provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL);
+          const wallet = new ethers.Wallet(privateKey, provider);
+          const stakingContract = new ethers.Contract(stakingContractAddress, stakingABI.abi, wallet);
+          
+          if (approved) {
+            console.log(`💰 Distributing rewards: ${bugStaked} BUG stake + ${bugRewards} BUG rewards = ${bugStaked + bugRewards} BUG total`);
+            const tx = await stakingContract.distributeRewards(upload.id, votesFor);
+            await tx.wait();
+            console.log(`✅ Rewards distributed! Tx: ${tx.hash}`);
+          } else {
+            console.log(`↩️  Returning stake: ${bugStaked} BUG (no rewards for rejected)`);
+            const tx = await stakingContract.returnStake(upload.id);
+            await tx.wait();
+            console.log(`✅ Stake returned! Tx: ${tx.hash}`);
+          }
+        } else {
+          console.warn('⚠️  Staking contract not configured, skipping on-chain reward distribution');
+        }
+      } catch (contractError) {
+        console.error('❌ Failed to call staking contract:', contractError);
+        // Continue with database update even if contract call fails
+      }
       
       // Update the upload with rewards
       await sql`

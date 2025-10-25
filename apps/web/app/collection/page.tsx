@@ -525,7 +525,8 @@ export default function CollectionPage() {
       console.log('✅ Stake confirmed!');
       
       // Show staking transaction on Blockscout
-      alert(`🎉 Stake successful!\n\n10 BUG staked for "${upload.title}"\n\nView transaction:\n${getTransactionUrl(stakeReceipt.hash)}`);
+      const bugName = upload.bugInfo?.commonName || 'Bug submission';
+      alert(`🎉 Stake successful!\n\n10 BUG staked for "${bugName}"\n\nView transaction:\n${getTransactionUrl(stakeReceipt.hash)}`);
 
       // STEP 4: Call backend API to update database
       console.log('📝 Updating database...');

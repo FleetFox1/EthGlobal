@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { PrivyProvider } from "@/components/PrivyProvider";
 import { UserProvider } from "@/lib/UserContext";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import { Header } from "@/components/Header";
 import { LandingModalWrapper } from "@/components/LandingModalWrapper";
 import "./globals.css";
@@ -40,17 +41,24 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <PrivyProvider>
-          <UserProvider>
-            <Header />
-            <LandingModalWrapper />
-            {children}
-          </UserProvider>
-        </PrivyProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem={false}
+          storageKey="bugdex-theme"
+        >
+          <PrivyProvider>
+            <UserProvider>
+              <Header />
+              <LandingModalWrapper />
+              {children}
+            </UserProvider>
+          </PrivyProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

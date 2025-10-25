@@ -35,20 +35,29 @@ export function UnlockFaucetModal({
     setPaymentMethod("eth");
 
     try {
+      console.log("🔍 Checking wallet provider...");
+      console.log("window.ethereum exists:", !!window.ethereum);
+      console.log("Expected wallet:", walletAddress);
+      
       // Check for wallet provider (works on mobile MetaMask and desktop)
       if (!window.ethereum) {
-        throw new Error("Please install MetaMask or use MetaMask mobile browser");
+        throw new Error("🦊 Please use MetaMask mobile browser to unlock. Open bugdex.life in MetaMask app → Browser tab");
       }
 
+      console.log("✅ window.ethereum found, creating provider...");
       const provider = new ethers.BrowserProvider(window.ethereum);
       
-      // On mobile, ensure we're using the already-connected wallet
-      const signerAddress = await provider.getSigner().then(s => s.getAddress()).catch(() => null);
-      if (signerAddress && signerAddress.toLowerCase() !== walletAddress.toLowerCase()) {
-        throw new Error("Please connect the correct wallet");
-      }
-      
+      console.log("🔑 Getting signer...");
       const signer = await provider.getSigner();
+      const signerAddress = await signer.getAddress();
+      
+      console.log("Signer address:", signerAddress);
+      console.log("Expected address:", walletAddress);
+      
+      // On mobile, ensure we're using the already-connected wallet
+      if (signerAddress.toLowerCase() !== walletAddress.toLowerCase()) {
+        throw new Error(`Wallet mismatch: Connected ${signerAddress}, expected ${walletAddress}`);
+      }
 
       // Use V2 contract for unlock functionality
       const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_V2_ADDRESS || process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS;
@@ -65,7 +74,7 @@ export function UnlockFaucetModal({
 
       console.log("💰 Unlocking faucet with ETH...");
       const tx = await bugToken.unlockWithETH({
-        value: ethers.parseEther("0.00033"), // ~$1
+        value: ethers.parseEther("0.00033"), // ~$1 in ETH
       });
 
       console.log("⏳ Waiting for confirmation...");
@@ -93,8 +102,18 @@ export function UnlockFaucetModal({
       
       onSuccess();
     } catch (error: any) {
-      console.error("Failed to unlock:", error);
-      setError(error.message || "Failed to unlock faucet");
+      console.error("Failed to unlock with ETH:", error);
+      
+      // Better error messages for mobile users
+      if (error.code === 'INSUFFICIENT_FUNDS' || error.message?.includes('insufficient funds')) {
+        setError("💰 Insufficient funds. You need ~0.0005 ETH (unlock fee + gas). Get free Sepolia ETH at sepoliafaucet.com");
+      } else if (error.code === 'ACTION_REJECTED' || error.message?.includes('user rejected')) {
+        setError("❌ Transaction cancelled");
+      } else if (error.message?.includes('Wallet mismatch')) {
+        setError(error.message);
+      } else {
+        setError(error.message || "Failed to unlock faucet");
+      }
     } finally {
       setLoading(false);
     }
@@ -106,20 +125,29 @@ export function UnlockFaucetModal({
     setPaymentMethod("pyusd");
 
     try {
+      console.log("🔍 Checking wallet provider (PYUSD)...");
+      console.log("window.ethereum exists:", !!window.ethereum);
+      console.log("Expected wallet:", walletAddress);
+      
       // Check for wallet provider (works on mobile MetaMask and desktop)
       if (!window.ethereum) {
-        throw new Error("Please install MetaMask or use MetaMask mobile browser");
+        throw new Error("🦊 Please use MetaMask mobile browser to unlock. Open bugdex.life in MetaMask app → Browser tab");
       }
 
+      console.log("✅ window.ethereum found, creating provider...");
       const provider = new ethers.BrowserProvider(window.ethereum);
       
-      // On mobile, ensure we're using the already-connected wallet
-      const signerAddress = await provider.getSigner().then(s => s.getAddress()).catch(() => null);
-      if (signerAddress && signerAddress.toLowerCase() !== walletAddress.toLowerCase()) {
-        throw new Error("Please connect the correct wallet");
-      }
-      
+      console.log("🔑 Getting signer...");
       const signer = await provider.getSigner();
+      const signerAddress = await signer.getAddress();
+      
+      console.log("Signer address:", signerAddress);
+      console.log("Expected address:", walletAddress);
+      
+      // On mobile, ensure we're using the already-connected wallet
+      if (signerAddress.toLowerCase() !== walletAddress.toLowerCase()) {
+        throw new Error(`Wallet mismatch: Connected ${signerAddress}, expected ${walletAddress}`);
+      }
 
       // Use V2 contract for unlock functionality
       const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_V2_ADDRESS || process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS;
@@ -173,8 +201,18 @@ export function UnlockFaucetModal({
       
       onSuccess();
     } catch (error: any) {
-      console.error("Failed to unlock:", error);
-      setError(error.message || "Failed to unlock faucet");
+      console.error("Failed to unlock with PYUSD:", error);
+      
+      // Better error messages for mobile users
+      if (error.code === 'INSUFFICIENT_FUNDS' || error.message?.includes('insufficient funds')) {
+        setError("💰 Insufficient PYUSD or ETH for gas. You need $1 PYUSD + small ETH for gas fees");
+      } else if (error.code === 'ACTION_REJECTED' || error.message?.includes('user rejected')) {
+        setError("❌ Transaction cancelled");
+      } else if (error.message?.includes('Wallet mismatch')) {
+        setError(error.message);
+      } else {
+        setError(error.message || "Failed to unlock faucet");
+      }
     } finally {
       setLoading(false);
     }

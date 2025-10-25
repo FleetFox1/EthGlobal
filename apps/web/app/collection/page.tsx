@@ -666,11 +666,12 @@ export default function CollectionPage() {
 
       const signer = await provider.getSigner();
 
-      // Get NFT contract address
-      const BUG_NFT_ADDRESS = process.env.NEXT_PUBLIC_BUG_NFT_ADDRESS;
-      if (!BUG_NFT_ADDRESS) {
-        throw new Error('BugNFT contract address not configured');
-      }
+      // Get NFT contract address - Try V2 first (public minting), fallback to V1
+      const BUG_NFT_ADDRESS = process.env.NEXT_PUBLIC_BUG_NFT_V2_ADDRESS || 
+                              process.env.NEXT_PUBLIC_BUG_NFT_ADDRESS ||
+                              '0xfDe4C483EbF1d187aB75C0AfCDa1342f273bE7DF'; // V2 with public minting
+      
+      console.log('🎨 Using NFT contract:', BUG_NFT_ADDRESS);
 
       // Calculate rarity based on vote count
       const totalVotes = (upload.votesFor || 0) + (upload.votesAgainst || 0);

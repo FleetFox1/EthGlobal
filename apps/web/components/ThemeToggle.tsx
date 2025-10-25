@@ -6,13 +6,14 @@ import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   // useEffect only runs on the client, so now we can safely show the UI
   useEffect(() => {
     setMounted(true);
-  }, []);
+    console.log('Theme state:', { theme, resolvedTheme });
+  }, [theme, resolvedTheme]);
 
   if (!mounted) {
     return (
@@ -27,14 +28,22 @@ export function ThemeToggle() {
     );
   }
 
+  const handleToggle = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    console.log('Switching theme from', theme, 'to', newTheme);
+    setTheme(newTheme);
+  };
+
+  const currentTheme = theme || resolvedTheme || 'dark';
+
   return (
     <Button
       variant="ghost"
       size="icon"
       className="h-9 w-9"
-      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+      onClick={handleToggle}
     >
-      {theme === 'dark' ? (
+      {currentTheme === 'dark' ? (
         <Sun className="h-4 w-4 text-yellow-500" />
       ) : (
         <Moon className="h-4 w-4 text-slate-700" />

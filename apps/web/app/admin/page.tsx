@@ -342,6 +342,20 @@ export default function AdminPage() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground mb-1">
+                BugSubmissionStaking
+                <span className="ml-2 px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 rounded">
+                  ✅ ACTIVE
+                </span>
+              </p>
+              <code className="text-sm bg-muted px-3 py-2 rounded block">
+                {process.env.NEXT_PUBLIC_STAKING_CONTRACT_ADDRESS}
+              </code>
+              <p className="text-xs text-muted-foreground mt-2">
+                <strong>Note:</strong> Holds 10 BUG stakes during community voting. Distributes stake + rewards (5 BUG per upvote) after voting ends.
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">
                 BugVoting 
                 <span className="ml-2 px-2 py-0.5 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 rounded">
                   ⚠️ DEPRECATED

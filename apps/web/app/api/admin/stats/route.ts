@@ -14,38 +14,39 @@ export async function GET() {
     `;
     const userCount = parseInt(usersResult.rows[0]?.count || '0');
 
-    // Get submission counts by status
+    // Get submission counts by voting_status from uploads table
     const statusResult = await sql`
       SELECT 
-        status,
+        voting_status,
         COUNT(*) as count
-      FROM bug_submissions
-      GROUP BY status
+      FROM uploads
+      GROUP BY voting_status
     `;
 
     const statusCounts: Record<string, number> = {};
     statusResult.rows.forEach((row: any) => {
-      statusCounts[row.status || 'pending'] = parseInt(row.count);
+      statusCounts[row.voting_status || 'not_submitted'] = parseInt(row.count);
     });
 
     // Get total votes cast (sum of all votes_for + votes_against)
     const votesResult = await sql`
       SELECT COALESCE(SUM(votes_for + votes_against), 0) as count 
-      FROM bug_submissions
+      FROM uploads
+      WHERE voting_status IN ('pending_voting', 'approved', 'rejected')
     `;
     const totalVotes = parseInt(votesResult.rows[0]?.count || '0');
 
     // Get active voting submissions (pending_voting with deadline not passed)
     const activeVotingResult = await sql`
       SELECT COUNT(*) as count 
-      FROM bug_submissions 
-      WHERE status = 'pending_voting' AND voting_deadline > NOW()
+      FROM uploads 
+      WHERE voting_status = 'pending_voting' AND voting_deadline > NOW()
     `;
     const activeVoting = parseInt(activeVotingResult.rows[0]?.count || '0');
 
-    // Get total submissions
+    // Get total submissions (all uploads)
     const totalSubmissionsResult = await sql`
-      SELECT COUNT(*) as count FROM bug_submissions
+      SELECT COUNT(*) as count FROM uploads
     `;
     const totalSubmissions = parseInt(totalSubmissionsResult.rows[0]?.count || '0');
 
@@ -54,12 +55,12 @@ export async function GET() {
       SELECT 
         id,
         wallet_address,
-        status,
+        voting_status,
         votes_for,
         votes_against,
         created_at,
         voting_deadline
-      FROM bug_submissions
+      FROM uploads
       ORDER BY created_at DESC
       LIMIT 10
     `;
@@ -70,11 +71,10 @@ export async function GET() {
         users: userCount,
         submissions: {
           total: totalSubmissions,
-          pending: statusCounts['pending'] || 0,
+          notSubmitted: statusCounts['not_submitted'] || 0,
           pendingVoting: statusCounts['pending_voting'] || 0,
           approved: statusCounts['approved'] || 0,
           rejected: statusCounts['rejected'] || 0,
-          minted: statusCounts['minted'] || 0,
         },
         votes: {
           total: totalVotes,
@@ -83,7 +83,7 @@ export async function GET() {
         recentActivity: recentActivity.rows.map((row: any) => ({
           id: row.id,
           wallet: row.wallet_address,
-          status: row.status,
+          status: row.voting_status,
           votesFor: row.votes_for || 0,
           votesAgainst: row.votes_against || 0,
           timestamp: row.created_at,

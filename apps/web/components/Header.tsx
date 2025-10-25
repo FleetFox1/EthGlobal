@@ -1,6 +1,7 @@
 'use client';
 
 import { WalletButton } from '@/components/WalletButton';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAdmin } from '@/lib/useAdmin';
 import { Shield, Heart } from 'lucide-react';
 import Link from 'next/link';
@@ -37,7 +38,7 @@ export function Header() {
           </span>
         </Link>
 
-        {/* Right: Conservation + Admin Link + Wallet Button */}
+        {/* Right: Conservation + Admin Link + Theme Toggle + Wallet Button */}
         <div className="flex items-center gap-3">
           <Link 
             href="/conservation" 
@@ -55,6 +56,7 @@ export function Header() {
               <span className="text-sm font-medium hidden sm:inline">Admin</span>
             </Link>
           )}
+          <ThemeToggle />
           <WalletButton variant="compact" />
         </div>
       </div>

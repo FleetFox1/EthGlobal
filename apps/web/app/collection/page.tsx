@@ -442,6 +442,44 @@ export default function CollectionPage() {
       }
 
       const provider = new ethers.BrowserProvider(window.ethereum);
+      
+      // CHECK NETWORK - Critical for testnet!
+      const network = await provider.getNetwork();
+      const currentChainId = Number(network.chainId);
+      const sepoliaChainId = 11155111;
+      
+      console.log('Current network:', currentChainId);
+      console.log('Expected network:', sepoliaChainId);
+      
+      if (currentChainId !== sepoliaChainId) {
+        console.log('❌ Wrong network! Requesting switch to Sepolia...');
+        try {
+          // Request network switch to Sepolia
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0xaa36a7' }], // 11155111 in hex
+          });
+          console.log('✅ Switched to Sepolia testnet');
+        } catch (switchError: any) {
+          // If Sepolia isn't added, add it
+          if (switchError.code === 4902) {
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [{
+                chainId: '0xaa36a7',
+                chainName: 'Sepolia Testnet',
+                nativeCurrency: { name: 'Sepolia ETH', symbol: 'ETH', decimals: 18 },
+                rpcUrls: ['https://rpc.sepolia.org'],
+                blockExplorerUrls: ['https://sepolia.etherscan.io'],
+              }],
+            });
+            console.log('✅ Added and switched to Sepolia testnet');
+          } else {
+            throw new Error('⚠️ Please switch to Sepolia testnet in MetaMask');
+          }
+        }
+      }
+      
       const signer = await provider.getSigner();
 
       // Contract addresses

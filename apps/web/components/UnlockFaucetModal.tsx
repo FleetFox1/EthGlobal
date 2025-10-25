@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -28,6 +28,48 @@ export function UnlockFaucetModal({
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"eth" | "pyusd" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [ethUnlockCost, setEthUnlockCost] = useState<string>("0.00033"); // Default fallback
+  const [loadingPrice, setLoadingPrice] = useState(true);
+
+  // Fetch dynamic ETH unlock cost from Pyth oracle
+  useEffect(() => {
+    const fetchEthPrice = async () => {
+      try {
+        // Use V3 contract with Pyth oracle
+        const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_V3_ADDRESS || 
+                                process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS;
+        
+        if (!bugTokenAddress) {
+          console.warn("BugToken address not configured, using fallback price");
+          setLoadingPrice(false);
+          return;
+        }
+
+        const provider = new ethers.JsonRpcProvider(
+          process.env.NEXT_PUBLIC_RPC_URL || "https://eth-sepolia.g.alchemy.com/v2/zhDx7ikWXX8vnhobQBhMb"
+        );
+
+        const bugTokenABI = [
+          "function getETHUnlockCost() public view returns (uint256)",
+        ];
+
+        const bugToken = new ethers.Contract(bugTokenAddress, bugTokenABI, provider);
+        const costInWei = await bugToken.getETHUnlockCost();
+        const costInEth = ethers.formatEther(costInWei);
+        
+        console.log("💰 Dynamic ETH unlock cost from Pyth:", costInEth, "ETH");
+        setEthUnlockCost(costInEth);
+        setLoadingPrice(false);
+      } catch (error) {
+        console.error("Failed to fetch ETH price, using fallback:", error);
+        setLoadingPrice(false);
+      }
+    };
+
+    if (open) {
+      fetchEthPrice();
+    }
+  }, [open]);
 
   const handleUnlockWithETH = async () => {
     setLoading(true);
@@ -96,22 +138,30 @@ export function UnlockFaucetModal({
         throw new Error(`Wallet mismatch: Connected ${signerAddress}, expected ${walletAddress}`);
       }
 
-      // Use V2 contract for unlock functionality
-      const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_V2_ADDRESS || process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS;
+      // Use V3 contract with Pyth oracle for dynamic pricing
+      const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_V3_ADDRESS || 
+                              process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS;
       if (!bugTokenAddress) {
         throw new Error("Contract address not configured");
       }
 
       const bugTokenABI = [
         "function unlockWithETH() external payable",
+        "function getETHUnlockCost() public view returns (uint256)",
         "event FaucetUnlocked(address indexed user, string paymentMethod, uint256 amount)",
       ];
 
       const bugToken = new ethers.Contract(bugTokenAddress, bugTokenABI, signer);
 
-      console.log("💰 Unlocking faucet with ETH...");
+      // Get current ETH unlock cost from Pyth oracle
+      console.log("📊 Fetching current ETH/USD price from Pyth...");
+      const requiredETH = await bugToken.getETHUnlockCost();
+      const ethAmount = ethers.formatEther(requiredETH);
+      console.log("💰 Required ETH for $1 unlock:", ethAmount, "ETH");
+
+      console.log("💰 Unlocking faucet with ETH (dynamic price)...");
       const tx = await bugToken.unlockWithETH({
-        value: ethers.parseEther("0.00033"), // ~$1 in ETH
+        value: requiredETH, // Dynamic price from Pyth oracle
       });
 
       console.log("⏳ Waiting for confirmation...");
@@ -128,7 +178,7 @@ export function UnlockFaucetModal({
             walletAddress: walletAddress,
             paymentMethod: 'ETH',
             transactionHash: receipt.hash,
-            amount: '0.00033'
+            amount: ethAmount // Dynamic amount from Pyth
           })
         });
         console.log('✅ Unlock recorded in database');
@@ -331,10 +381,14 @@ export function UnlockFaucetModal({
 
           {/* Pricing */}
           <div className="text-center">
-            <p className="text-3xl font-bold">~$1</p>
+            <p className="text-3xl font-bold">$1</p>
             <p className="text-sm text-muted-foreground">One-time payment</p>
             <p className="text-xs text-muted-foreground mt-1">
-              Unlocks lifetime faucet access + 100 BUG tokens
+              {loadingPrice ? (
+                "Loading current price..."
+              ) : (
+                <>Unlocks lifetime faucet access + 100 BUG tokens</>
+              )}
             </p>
           </div>
 
@@ -345,7 +399,7 @@ export function UnlockFaucetModal({
             {/* ETH Payment */}
             <Button
               onClick={handleUnlockWithETH}
-              disabled={loading}
+              disabled={loading || loadingPrice}
               className="w-full h-auto py-4 flex-col gap-2"
               variant="default"
             >
@@ -360,7 +414,13 @@ export function UnlockFaucetModal({
                     <Coins className="h-5 w-5" />
                     <span className="font-semibold">Pay with ETH</span>
                   </div>
-                  <span className="text-xs opacity-80">~0.00033 ETH</span>
+                  <span className="text-xs opacity-80">
+                    {loadingPrice ? (
+                      <Loader2 className="h-3 w-3 animate-spin inline" />
+                    ) : (
+                      <>~{parseFloat(ethUnlockCost).toFixed(6)} ETH (live price via Pyth)</>
+                    )}
+                  </span>
                 </>
               )}
             </Button>

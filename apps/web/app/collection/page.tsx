@@ -721,15 +721,18 @@ export default function CollectionPage() {
         tokenId = parsed?.args?.tokenId?.toString() || 'Unknown';
       }
 
-      alert(`🎉 NFT Minted Successfully!\n\n✨ Token ID: ${tokenId}\n🎨 Rarity: ${['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'][rarityLevel]}\n📊 Based on ${upload.votesFor || 0} upvotes\n\n🔗 Transaction: ${receipt.hash}`);
-      
-      // Show Blockscout transaction link
+      // Show success message and open explorer in new tab
       const { getTransactionUrl } = await import('@/lib/blockscout');
-      setTimeout(() => {
-        alert(`🔍 View on Explorer:\n${getTransactionUrl(receipt.hash)}`);
-      }, 500);
+      const explorerUrl = getTransactionUrl(receipt.hash);
+      
+      alert(`🎉 NFT Minted Successfully!\n\n✨ Token ID: ${tokenId}\n🎨 Rarity: ${['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'][rarityLevel]}\n📊 Based on ${upload.votesFor || 0} upvotes\n\n🔗 Opening explorer in new tab...`);
+      
+      // Open Blockscout in new window
+      window.open(explorerUrl, '_blank', 'noopener,noreferrer');
 
-      // Reload uploads to update status
+      // Reload uploads to update status - wait a bit for blockchain to update
+      console.log('🔄 Waiting for blockchain to update...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
       await loadUploads();
       
       // Switch to on-chain tab to show the newly minted NFT

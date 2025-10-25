@@ -7,6 +7,7 @@ import { ethers } from "hardhat";
  * By default, only the owner can mint. This grants minting rights to other addresses.
  */
 async function main() {
+  // @ts-ignore
   const signers = await ethers.getSigners();
   const deployer = signers[0];
   
@@ -25,13 +26,10 @@ async function main() {
   console.log("✅ Deployer authorized!");
 
   // Option 2: Make minting public (allow anyone to mint their approved bugs)
-  // Uncomment if you want users to mint directly:
-  /*
   console.log("\n2️⃣ Making minting public...");
   const tx2 = await BugNFT.authorizeMinter(ethers.ZeroAddress); // Special: allows anyone
   await tx2.wait();
   console.log("✅ Public minting enabled!");
-  */
 
   // Verify authorization
   const isAuthorized = await BugNFT.authorizedMinters(deployer.address);

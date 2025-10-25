@@ -715,6 +715,12 @@ export default function CollectionPage() {
       }
 
       alert(`🎉 NFT Minted Successfully!\n\n✨ Token ID: ${tokenId}\n🎨 Rarity: ${['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'][rarityLevel]}\n📊 Based on ${upload.votesFor || 0} upvotes\n\n🔗 Transaction: ${receipt.hash}`);
+      
+      // Show Blockscout transaction link
+      const { getTransactionUrl } = await import('@/lib/blockscout');
+      setTimeout(() => {
+        alert(`🔍 View on Explorer:\n${getTransactionUrl(receipt.hash)}`);
+      }, 500);
 
       // Reload uploads to update status
       await loadUploads();

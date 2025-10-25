@@ -202,6 +202,11 @@ interface UserUpload {
   bugStaked?: number;
   bugRewardsEarned?: number;
   rewardsClaimed?: boolean;
+  // NFT tracking from database
+  nftMinted?: boolean;
+  nftTokenId?: number;
+  nftContractAddress?: string;
+  nftTransactionHash?: string;
 }
 
 export default function CollectionPage() {
@@ -425,8 +430,9 @@ export default function CollectionPage() {
   }, [isAuthenticated, walletAddress, loadUploads]);
 
   // Filter uploads by minted status
-  const offChainUploads = uploads.filter(u => !u.blockchainStatus?.nftClaimed);
-  const onChainUploads = uploads.filter(u => u.blockchainStatus?.nftClaimed);
+  // Check both blockchain nftClaimed flag AND database nft_minted flag
+  const offChainUploads = uploads.filter(u => !u.blockchainStatus?.nftClaimed && !u.nftMinted);
+  const onChainUploads = uploads.filter(u => u.blockchainStatus?.nftClaimed || u.nftMinted);
 
   const submitForVoting = async (upload: UserUpload) => {
     if (!walletAddress) return;
@@ -733,6 +739,27 @@ export default function CollectionPage() {
       
       // Open Blockscout in new window
       window.open(explorerUrl, '_blank', 'noopener,noreferrer');
+
+      // Save NFT data to database
+      if (tokenId !== 'Unknown') {
+        try {
+          console.log('💾 Saving NFT data to database...');
+          await fetch('/api/save-nft-mint', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              uploadId: upload.id,
+              tokenId: tokenId,
+              contractAddress: BUG_NFT_ADDRESS,
+              transactionHash: receipt.hash
+            })
+          });
+          console.log('✅ NFT data saved to database');
+        } catch (dbError) {
+          console.error('⚠️ Failed to save NFT to database:', dbError);
+          // Don't fail the whole operation if DB update fails
+        }
+      }
 
       // Reload uploads to update status - wait a bit for blockchain to update
       console.log('🔄 Waiting for blockchain to update...');

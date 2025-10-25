@@ -32,7 +32,11 @@ export function Header() {
           onClick={handleLogoClick}
           className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
         >
-          <span className="text-2xl">🐛</span>
+          <img 
+            src="/logo.jpg" 
+            alt="BugDex Logo" 
+            className="h-8 w-8 rounded-md object-contain"
+          />
           <span className="text-xl font-bold bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
             BugDex
           </span>

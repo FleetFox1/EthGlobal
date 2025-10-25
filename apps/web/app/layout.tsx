@@ -21,6 +21,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "BugDex - Web3 Bug Collection",
   description: "Discover, collect, and trade bug NFTs on the blockchain. Built for ETHGlobal 2025.",
+  icons: {
+    icon: "/logo.jpg",
+    shortcut: "/logo.jpg",
+    apple: "/logo.jpg",
+  },
 };
 
 export const viewport: Viewport = {

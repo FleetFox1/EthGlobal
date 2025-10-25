@@ -507,8 +507,12 @@ export default function CollectionPage() {
 
       const approveTx = await bugToken.approve(STAKING_CONTRACT_ADDRESS, ethers.parseEther("10"));
       console.log('⏳ Waiting for approval...');
-      await approveTx.wait();
+      const approveReceipt = await approveTx.wait();
       console.log('✅ Approval confirmed!');
+      
+      // Show approval transaction on Blockscout
+      const { getTransactionUrl } = await import('@/lib/blockscout');
+      alert(`✅ Approval confirmed!\n\nView on explorer:\n${getTransactionUrl(approveReceipt.hash)}`);
 
       // STEP 3: Stake via contract
       console.log('🔒 Staking 10 BUG...');
@@ -517,8 +521,11 @@ export default function CollectionPage() {
       
       const stakeTx = await stakingContract.stakeForSubmission(upload.id);
       console.log('⏳ Waiting for stake transaction...');
-      await stakeTx.wait();
+      const stakeReceipt = await stakeTx.wait();
       console.log('✅ Stake confirmed!');
+      
+      // Show staking transaction on Blockscout
+      alert(`🎉 Stake successful!\n\n10 BUG staked for "${upload.title}"\n\nView transaction:\n${getTransactionUrl(stakeReceipt.hash)}`);
 
       // STEP 4: Call backend API to update database
       console.log('📝 Updating database...');
@@ -596,7 +603,10 @@ export default function CollectionPage() {
       const receipt = await tx.wait();
 
       console.log('✅ NFT Claimed!', receipt.hash);
-      alert(`🎉 Congratulations! Your Bug NFT has been minted!\n\nTransaction: ${receipt.hash}`);
+      
+      // Show transaction on Blockscout
+      const { getTransactionUrl } = await import('@/lib/blockscout');
+      alert(`🎉 Congratulations! Your Bug NFT has been minted!\n\nView on explorer:\n${getTransactionUrl(receipt.hash)}`);
 
       // Reload uploads to update status
       await loadUploads();

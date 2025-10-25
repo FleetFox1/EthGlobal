@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/db/client";
 import { ethers } from "ethers";
+import stakingABI from "@/lib/contracts/BugSubmissionStaking.json";
 
 /**
  * POST /api/submit-for-voting
  * 
- * Submit a bug for community voting (requires 10 BUG stake)
+ * Verify stake and submit a bug for community voting (requires 10 BUG stake)
+ * Frontend must call staking contract first, then call this API
  * 
  * Body:
  * - uploadId: string - ID of the upload
@@ -24,48 +26,64 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("🗳️  Submitting for voting:", uploadId);
+    console.log("🗳️  Verifying stake and submitting for voting:", uploadId);
 
     const walletAddr = walletAddress.toLowerCase();
 
-    // STEP 1: Check BUG token balance (requires 10 BUG to stake)
+    // STEP 1: Verify stake exists in staking contract
     const STAKE_AMOUNT = 10;
-    const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_V2_ADDRESS || process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS;
+    const stakingContractAddress = process.env.NEXT_PUBLIC_STAKING_CONTRACT_ADDRESS;
     
-    if (!bugTokenAddress) {
+    if (!stakingContractAddress) {
       return NextResponse.json(
-        { error: "BUG token contract not configured" },
+        { error: "Staking contract not configured" },
         { status: 500 }
       );
     }
 
     try {
-      // Use public RPC to check balance (read-only, no wallet needed)
+      // Use public RPC to verify stake (read-only, no wallet needed)
       const provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL || "https://sepolia.infura.io/v3/");
-      const bugTokenABI = [
-        "function balanceOf(address) view returns (uint256)",
-      ];
-      const bugToken = new ethers.Contract(bugTokenAddress, bugTokenABI, provider);
+      const stakingContract = new ethers.Contract(stakingContractAddress, stakingABI.abi, provider);
       
-      const balance = await bugToken.balanceOf(walletAddress);
-      const balanceInBUG = Number(ethers.formatEther(balance));
+      // Check if stake exists for this uploadId
+      const stake = await stakingContract.stakes(uploadId);
       
-      console.log(`💰 User BUG balance: ${balanceInBUG}`);
-      
-      if (balanceInBUG < STAKE_AMOUNT) {
+      if (!stake || !stake.submitter || stake.submitter === ethers.ZeroAddress) {
         return NextResponse.json(
           { 
-            error: `Insufficient BUG tokens. You have ${balanceInBUG.toFixed(2)} BUG but need ${STAKE_AMOUNT} BUG to submit for voting.`,
-            currentBalance: balanceInBUG,
-            requiredBalance: STAKE_AMOUNT,
+            error: "No stake found in contract. Please stake 10 BUG first using your wallet.",
           },
           { status: 400 }
         );
       }
-    } catch (balanceError) {
-      console.error("❌ Failed to check BUG balance:", balanceError);
+
+      // Verify stake is from correct wallet
+      if (stake.submitter.toLowerCase() !== walletAddr) {
+        return NextResponse.json(
+          { 
+            error: `Stake found but from different wallet. Expected ${walletAddr} but got ${stake.submitter}`,
+          },
+          { status: 400 }
+        );
+      }
+
+      // Verify stake amount
+      const stakeAmountInBUG = Number(ethers.formatEther(stake.amount));
+      if (stakeAmountInBUG < STAKE_AMOUNT) {
+        return NextResponse.json(
+          { 
+            error: `Insufficient stake amount. Found ${stakeAmountInBUG} BUG but need ${STAKE_AMOUNT} BUG`,
+          },
+          { status: 400 }
+        );
+      }
+
+      console.log(`✅ Verified stake: ${stakeAmountInBUG} BUG from ${stake.submitter}`);
+    } catch (stakeError: any) {
+      console.error("❌ Failed to verify stake:", stakeError);
       return NextResponse.json(
-        { error: "Failed to verify BUG token balance. Please try again." },
+        { error: "Failed to verify stake in contract. Did you call stakeForSubmission()?" },
         { status: 500 }
       );
     }

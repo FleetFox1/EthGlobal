@@ -434,8 +434,56 @@ export default function CollectionPage() {
     setSubmitting(upload.id);
 
     try {
-      console.log('🗳️  Submitting for community voting (FREE)...');
+      console.log('🗳️  Staking 10 BUG and submitting for community voting...');
 
+      // STEP 1: Get wallet provider and signer
+      if (!window.ethereum) {
+        throw new Error('No wallet found. Please install MetaMask.');
+      }
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      // Contract addresses
+      const BUG_TOKEN_ADDRESS = process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS || process.env.NEXT_PUBLIC_BUG_TOKEN_V2_ADDRESS;
+      const STAKING_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_STAKING_CONTRACT_ADDRESS;
+
+      if (!BUG_TOKEN_ADDRESS || !STAKING_CONTRACT_ADDRESS) {
+        throw new Error('Contracts not configured');
+      }
+
+      // STEP 2: Approve BUG tokens
+      console.log('💰 Approving 10 BUG tokens...');
+      const bugTokenABI = [
+        "function approve(address spender, uint256 amount) returns (bool)",
+        "function balanceOf(address owner) view returns (uint256)",
+      ];
+      const bugToken = new ethers.Contract(BUG_TOKEN_ADDRESS, bugTokenABI, signer);
+      
+      // Check balance first
+      const balance = await bugToken.balanceOf(walletAddress);
+      const balanceInBUG = Number(ethers.formatEther(balance));
+      if (balanceInBUG < 10) {
+        throw new Error(`Insufficient BUG tokens. You have ${balanceInBUG.toFixed(2)} BUG but need 10 BUG.`);
+      }
+
+      const approveTx = await bugToken.approve(STAKING_CONTRACT_ADDRESS, ethers.parseEther("10"));
+      console.log('⏳ Waiting for approval...');
+      await approveTx.wait();
+      console.log('✅ Approval confirmed!');
+
+      // STEP 3: Stake via contract
+      console.log('🔒 Staking 10 BUG...');
+      const stakingABI = (await import('@/lib/contracts/BugSubmissionStaking.json')).default;
+      const stakingContract = new ethers.Contract(STAKING_CONTRACT_ADDRESS, stakingABI.abi, signer);
+      
+      const stakeTx = await stakingContract.stakeForSubmission(upload.id);
+      console.log('⏳ Waiting for stake transaction...');
+      await stakeTx.wait();
+      console.log('✅ Stake confirmed!');
+
+      // STEP 4: Call backend API to update database
+      console.log('📝 Updating database...');
       const res = await fetch('/api/submit-for-voting', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -463,12 +511,13 @@ export default function CollectionPage() {
               votingStatus: 'pending_voting',
               votingDeadline: data.data.votingDeadline,
               votesFor: 0,
-              votesAgainst: 0
+              votesAgainst: 0,
+              bugStaked: 10
             }
           : u
       ));
 
-      alert(`Bug submitted for community voting! 🎉\n\n✅ Submission is FREE (no gas cost)\n🗳️ Voting period starts now\n⏰ Ends: ${deadline.toLocaleString()}\n\nCommunity members can now vote on your discovery!`);
+      alert(`Bug submitted for community voting! 🎉\n\n💎 10 BUG tokens staked in contract\n💰 You'll earn 5 BUG per upvote!\n🗳️ Voting period starts now\n⏰ Ends: ${deadline.toLocaleString()}\n\nCommunity members can now vote on your discovery!`);
 
       // Reload uploads to get fresh data from server
       await loadUploads();

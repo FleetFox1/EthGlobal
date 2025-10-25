@@ -22,7 +22,7 @@ importers:
         specifier: ^5.0.0
         version: 5.0.0(5ade1b8d7a028b3835b6698e36c7c856)
       '@nomicfoundation/hardhat-verify':
-        specifier: ^2.0.0
+        specifier: ^2.1.1
         version: 2.1.1(hardhat@2.26.3(ts-node@10.9.2(@types/node@20.19.20)(typescript@5.9.3))(typescript@5.9.3))
       '@typechain/ethers-v6':
         specifier: ^0.5.0
@@ -34,8 +34,11 @@ importers:
         specifier: ^20.0.0
         version: 20.19.20
       hardhat:
-        specifier: ^2.22.0
+        specifier: ^2.26.3
         version: 2.26.3(ts-node@10.9.2(@types/node@20.19.20)(typescript@5.9.3))(typescript@5.9.3)
+      hardhat-gas-reporter:
+        specifier: ^1.0.10
+        version: 1.0.10(hardhat@2.26.3(ts-node@10.9.2(@types/node@20.19.20)(typescript@5.9.3))(typescript@5.9.3))
       ts-node:
         specifier: ^10.9.0
         version: 10.9.2(@types/node@20.19.20)(typescript@5.9.3)

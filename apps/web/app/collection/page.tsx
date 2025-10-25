@@ -28,6 +28,7 @@ import Link from "next/link";
 import { useUser } from "@/lib/useUser";
 import { ethers } from "ethers";
 import { getRarityFromScore } from "@/types/rarityTiers";
+import NFTWithRarityFrame from "@/components/NFTWithRarityFrame";
 
 // Helper to get background color class from rarity
 function getRarityBgColor(rarityName: string): string {
@@ -211,6 +212,7 @@ export default function CollectionPage() {
   const [selectedBug, setSelectedBug] = useState<UserUpload | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [claiming, setClaiming] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'off-chain' | 'on-chain'>('off-chain');
 
   const loadUploads = useCallback(async () => {
     if (!walletAddress) return;
@@ -421,6 +423,10 @@ export default function CollectionPage() {
       loadUploads();
     }
   }, [isAuthenticated, walletAddress, loadUploads]);
+
+  // Filter uploads by minted status
+  const offChainUploads = uploads.filter(u => !u.blockchainStatus?.nftClaimed);
+  const onChainUploads = uploads.filter(u => u.blockchainStatus?.nftClaimed);
 
   const submitForVoting = async (upload: UserUpload) => {
     if (!walletAddress) return;
@@ -724,6 +730,9 @@ export default function CollectionPage() {
 
       // Reload uploads to update status
       await loadUploads();
+      
+      // Switch to on-chain tab to show the newly minted NFT
+      setActiveTab('on-chain');
     } catch (error: any) {
       const err = error as Error;
       console.error('Failed to mint NFT:', err);
@@ -852,9 +861,29 @@ export default function CollectionPage() {
           </Card>
         )}
 
+        {/* Tab Navigation */}
+        {uploads.length > 0 && (
+          <div className="flex gap-2 mb-6">
+            <Button 
+              variant={activeTab === 'off-chain' ? 'default' : 'outline'}
+              onClick={() => setActiveTab('off-chain')}
+              className="flex-1 sm:flex-initial"
+            >
+              📤 Off-Chain ({offChainUploads.length})
+            </Button>
+            <Button 
+              variant={activeTab === 'on-chain' ? 'default' : 'outline'}
+              onClick={() => setActiveTab('on-chain')}
+              className="flex-1 sm:flex-initial"
+            >
+              ⛓️ On-Chain NFTs ({onChainUploads.length})
+            </Button>
+          </div>
+        )}
+
         {/* Grid of uploads */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {uploads.map((upload) => {
+          {(activeTab === 'off-chain' ? offChainUploads : onChainUploads).map((upload) => {
             // Calculate rarity and status-based styling
             const netVotes = (upload.votesFor || 0) - (upload.votesAgainst || 0);
             const rarity = getRarityFromScore(netVotes);
@@ -874,6 +903,29 @@ export default function CollectionPage() {
               cardClasses += "border border-border hover:shadow-xl";
             }
 
+            // Render NFTWithRarityFrame for on-chain tab
+            if (activeTab === 'on-chain') {
+              return (
+                <div 
+                  key={upload.id}
+                  onClick={() => {
+                    setSelectedBug(upload);
+                    setIsModalOpen(true);
+                  }}
+                >
+                  <NFTWithRarityFrame
+                    imageUrl={upload.imageUrl}
+                    voteScore={netVotes}
+                    name={upload.bugInfo?.commonName || 'Unknown Bug'}
+                    description={upload.bugInfo?.scientificName || ''}
+                    votesFor={upload.votesFor}
+                    votesAgainst={upload.votesAgainst}
+                  />
+                </div>
+              );
+            }
+
+            // Regular card for off-chain tab
             return (
               <Card 
                 key={upload.id} 

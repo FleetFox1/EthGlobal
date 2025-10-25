@@ -518,7 +518,9 @@ export default function CollectionPage() {
       
       // Show approval transaction on Blockscout
       const { getTransactionUrl } = await import('@/lib/blockscout');
-      alert(`✅ Approval confirmed!\n\nView on explorer:\n${getTransactionUrl(approveReceipt.hash)}`);
+      const approveUrl = getTransactionUrl(approveReceipt.hash);
+      alert(`✅ Approval confirmed!\n\nOpening explorer in new tab...`);
+      window.open(approveUrl, '_blank', 'noopener,noreferrer');
 
       // STEP 3: Stake via contract
       console.log('🔒 Staking 10 BUG...');
@@ -532,7 +534,9 @@ export default function CollectionPage() {
       
       // Show staking transaction on Blockscout
       const bugName = upload.bugInfo?.commonName || 'Bug submission';
-      alert(`🎉 Stake successful!\n\n10 BUG staked for "${bugName}"\n\nView transaction:\n${getTransactionUrl(stakeReceipt.hash)}`);
+      const stakeUrl = getTransactionUrl(stakeReceipt.hash);
+      alert(`🎉 Stake successful!\n\n10 BUG staked for "${bugName}"\n\nOpening explorer in new tab...`);
+      window.open(stakeUrl, '_blank', 'noopener,noreferrer');
 
       // STEP 4: Call backend API to update database
       console.log('📝 Updating database...');

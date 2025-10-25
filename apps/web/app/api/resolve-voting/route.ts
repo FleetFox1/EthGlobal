@@ -25,7 +25,8 @@ export async function GET(request: NextRequest) {
         votes_against,
         voting_deadline,
         wallet_address,
-        metadata_cid
+        metadata_cid,
+        bug_staked
       FROM uploads
       WHERE voting_status = 'pending_voting'
         AND voting_deadline <= NOW()
@@ -47,6 +48,7 @@ export async function GET(request: NextRequest) {
     for (const upload of expiredUploads) {
       const votesFor = upload.votes_for || 0;
       const votesAgainst = upload.votes_against || 0;
+      const bugStaked = upload.bug_staked || 10;
       
       // Approval logic: 
       // - Net votes >= 0 (including 0 total votes) → Approved
@@ -55,13 +57,20 @@ export async function GET(request: NextRequest) {
       const approved = netVotes >= 0;
       const newStatus = approved ? 'approved' : 'rejected';
       
-      // Update the upload
+      // Calculate BUG rewards: 5 BUG per upvote
+      const REWARD_PER_UPVOTE = 5;
+      const bugRewards = approved ? votesFor * REWARD_PER_UPVOTE : 0;
+      
+      console.log(`📊 Resolving ${upload.id}: ${votesFor} FOR, ${votesAgainst} AGAINST = ${approved ? 'APPROVED' : 'REJECTED'}, Rewards: ${bugRewards} BUG`);
+      
+      // Update the upload with rewards
       await sql`
         UPDATE uploads
         SET 
           voting_status = ${newStatus},
           voting_resolved = true,
-          voting_approved = ${approved}
+          voting_approved = ${approved},
+          bug_rewards_earned = ${bugRewards}
         WHERE id = ${upload.id}
       `;
       
@@ -72,6 +81,8 @@ export async function GET(request: NextRequest) {
         netVotes,
         approved,
         status: newStatus,
+        bugStaked,
+        bugRewardsEarned: bugRewards,
       });
     }
     

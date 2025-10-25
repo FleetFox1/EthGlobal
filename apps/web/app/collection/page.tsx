@@ -197,6 +197,10 @@ interface UserUpload {
   votingDeadline?: string;
   votingResolved?: boolean;
   votingApproved?: boolean;
+  // BUG token stake and rewards
+  bugStaked?: number;
+  bugRewardsEarned?: number;
+  rewardsClaimed?: boolean;
 }
 
 export default function CollectionPage() {
@@ -805,7 +809,7 @@ export default function CollectionPage() {
                       <>
                         <div className="text-xs text-muted-foreground bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
                           <span className="font-semibold">💾 Saved Off-Chain</span>
-                          <p className="mt-1">Submit for FREE community voting! If approved, you can mint an NFT.</p>
+                          <p className="mt-1">Submit for community voting! Requires 10 BUG stake. Earn 5 BUG per upvote!</p>
                         </div>
                         <Button
                           onClick={(e) => {
@@ -824,7 +828,7 @@ export default function CollectionPage() {
                           ) : (
                             <>
                               <Upload className="h-4 w-4 mr-2" />
-                              Submit for Community Voting (FREE)
+                              Submit for Voting (Stake 10 BUG)
                             </>
                           )}
                         </Button>
@@ -840,6 +844,21 @@ export default function CollectionPage() {
                             <span className="font-semibold text-yellow-900 dark:text-yellow-100">🗳️ Active Voting</span>
                           </div>
                           <CountdownTimer deadline={upload.votingDeadline} />
+                        </div>
+                        
+                        {/* BUG Stake Display */}
+                        <div className="mb-2 bg-purple-100 dark:bg-purple-900/30 p-2 rounded border border-purple-300 dark:border-purple-700">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-purple-700 dark:text-purple-300">💎 Staked</span>
+                            <span className="text-sm font-bold text-purple-600">{upload.bugStaked || 10} BUG</span>
+                          </div>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="text-xs text-purple-700 dark:text-purple-300">💰 Potential Rewards</span>
+                            <span className="text-sm font-bold text-purple-600">{(upload.votesFor || 0) * 5} BUG</span>
+                          </div>
+                          <div className="text-xs text-purple-600 dark:text-purple-400 mt-1 text-center">
+                            (5 BUG per upvote)
+                          </div>
                         </div>
                         
                         <div className="grid grid-cols-2 gap-2 mb-2">
@@ -883,6 +902,17 @@ export default function CollectionPage() {
                                   <span className="text-xs text-muted-foreground">
                                     (+{netVotes} net votes)
                                   </span>
+                                </div>
+                                
+                                {/* BUG Rewards Earned */}
+                                <div className="mb-2 bg-green-100 dark:bg-green-900/30 p-2 rounded border border-green-300 dark:border-green-700">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs text-green-700 dark:text-green-300">🎉 Rewards Earned</span>
+                                    <span className="text-sm font-bold text-green-600">{upload.bugRewardsEarned || ((upload.votesFor || 0) * 5)} BUG</span>
+                                  </div>
+                                  <div className="text-xs text-green-600 dark:text-green-400 mt-1 text-center">
+                                    ({upload.votesFor || 0} upvotes × 5 BUG) + {upload.bugStaked || 10} BUG stake returned
+                                  </div>
                                 </div>
                                 
                                 <div className="text-xs space-y-1">

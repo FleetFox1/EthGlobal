@@ -35,6 +35,10 @@ export function WalletButton({ variant = 'default' }: WalletButtonProps) {
   }
 
   if (isConnected && address) {
+    const avatarUrl = profile?.ipfsProfile?.avatar 
+      ? `https://gateway.lighthouse.storage/ipfs/${profile.ipfsProfile.avatar}`
+      : null;
+
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -43,7 +47,15 @@ export function WalletButton({ variant = 'default' }: WalletButtonProps) {
             className={`${variant === 'compact' ? 'px-3 py-1.5 h-9' : 'px-4 py-2.5 h-10'} bg-green-500/10 text-green-500 border-green-500/20 hover:bg-green-500/20 hover:text-green-500`}
           >
             <div className="flex items-center gap-2">
-              <User className="h-4 w-4" />
+              {avatarUrl ? (
+                <img 
+                  src={avatarUrl} 
+                  alt="Profile" 
+                  className="h-5 w-5 rounded-full object-cover border border-green-500/30"
+                />
+              ) : (
+                <User className="h-4 w-4" />
+              )}
               <span>
                 {userLoading ? (
                   'Loading...'

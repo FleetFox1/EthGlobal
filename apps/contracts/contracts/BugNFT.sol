@@ -31,6 +31,9 @@ contract BugNFT is ERC721URIStorage, Ownable {
     // Authorized minters (e.g., Voting contract)
     mapping(address => bool) public authorizedMinters;
     
+    // Public minting flag - allows anyone to mint their approved bugs
+    bool public publicMintingEnabled;
+    
     // Track bugs discovered by address
     mapping(address => uint256[]) public discoveriesByAddress;
     
@@ -60,7 +63,7 @@ contract BugNFT is ERC721URIStorage, Ownable {
         uint256 voteCount
     ) external returns (uint256) {
         require(
-            authorizedMinters[msg.sender] || msg.sender == owner(),
+            publicMintingEnabled || authorizedMinters[msg.sender] || msg.sender == owner(),
             "BugNFT: Not authorized to mint"
         );
         
@@ -119,6 +122,20 @@ contract BugNFT is ERC721URIStorage, Ownable {
     function revokeMinter(address minter) external onlyOwner {
         authorizedMinters[minter] = false;
         emit MinterRevoked(minter);
+    }
+    
+    /**
+     * @dev Enable public minting (anyone can mint)
+     */
+    function enablePublicMinting() external onlyOwner {
+        publicMintingEnabled = true;
+    }
+    
+    /**
+     * @dev Disable public minting (only authorized minters can mint)
+     */
+    function disablePublicMinting() external onlyOwner {
+        publicMintingEnabled = false;
     }
     
     /**

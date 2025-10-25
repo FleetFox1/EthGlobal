@@ -326,7 +326,7 @@ function SubmissionCard({ submission: s, onVote, onClaimNFT, isProcessing, curre
         </div>
         {total > 0 && <div className="mb-3">
           <div className="flex justify-between text-xs mb-1">
-            <span className="text-muted-foreground">{total} vote{total > 1 ? "s" : ""}  Need 5</span>
+            <span className="text-muted-foreground">{total} vote{total > 1 ? "s" : ""} • More upvotes = rarer NFT!</span>
             <span className="font-medium">{Math.round(pct)}% approve</span>
           </div>
           <div className="h-2 bg-muted rounded-full overflow-hidden">

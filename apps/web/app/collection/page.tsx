@@ -640,15 +640,18 @@ export default function CollectionPage() {
             <div className="flex items-start gap-3">
               <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
               <div className="space-y-1">
-                <h3 className="font-semibold text-sm">How BugDex Works (Now with FREE Voting!)</h3>
+                <h3 className="font-semibold text-sm">How BugDex Works</h3>
                 <p className="text-sm text-muted-foreground">
                   Your bug photos are <span className="font-semibold text-foreground">saved to IPFS</span> (decentralized storage) for free! 
-                  Submit for <span className="font-semibold text-foreground">FREE community voting</span> (no gas fees!).
-                  If approved, mint your NFT and earn BUG tokens!
+                  <span className="font-semibold text-foreground"> Stake 10 BUG</span> to submit for community voting.
+                  Voting is <span className="font-semibold text-foreground">FREE for everyone</span> (no gas fees!).
+                  Earn <span className="font-semibold text-green-600">5 BUG per upvote</span>! More upvotes = rarer NFT!
                 </p>
                 <div className="flex gap-2 text-xs text-muted-foreground mt-2">
                   <span className="bg-white dark:bg-gray-800 px-2 py-1 rounded">💾 Free IPFS Storage</span>
-                  <span className="bg-white dark:bg-gray-800 px-2 py-1 rounded">🗳️ FREE Voting (No Gas!)</span>
+                  <span className="bg-white dark:bg-gray-800 px-2 py-1 rounded">💎 Stake 10 BUG</span>
+                  <span className="bg-white dark:bg-gray-800 px-2 py-1 rounded">🗳️ Free Voting</span>
+                  <span className="bg-white dark:bg-gray-800 px-2 py-1 rounded">💰 5 BUG/upvote</span>
                   <span className="bg-white dark:bg-gray-800 px-2 py-1 rounded">🎨 NFT Rewards</span>
                 </div>
               </div>
@@ -667,8 +670,10 @@ export default function CollectionPage() {
             <div className="bg-muted/50 p-4 rounded-lg mb-6 text-sm text-left space-y-2">
               <p><strong>📸 Take Photos:</strong> Snap bugs you discover</p>
               <p><strong>💾 Free Storage:</strong> Photos saved to IPFS (decentralized)</p>
-              <p><strong>🗳️ FREE Voting:</strong> Submit for community voting (no gas fees!)</p>
-              <p><strong>🎨 Mint NFTs:</strong> If approved, mint your bug as an NFT and earn BUG tokens</p>
+              <p><strong>� Stake to Submit:</strong> Stake 10 BUG to submit for community voting</p>
+              <p><strong>🗳️ Free Voting:</strong> Community votes for FREE (no gas fees!)</p>
+              <p><strong>💰 Earn Rewards:</strong> Get 5 BUG per upvote! More votes = rarer NFT</p>
+              <p><strong>🎨 Mint NFTs:</strong> If approved, mint your bug as an NFT</p>
               <p><strong>🌍 Help Science:</strong> Contribute to bug conservation data</p>
             </div>
             <Link href="/">

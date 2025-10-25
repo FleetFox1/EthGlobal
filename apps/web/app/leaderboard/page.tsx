@@ -1,10 +1,116 @@
 ﻿"use client";
 
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Trophy, Sparkles, TrendingUp } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { ArrowLeft, Trophy, User, Loader2, Medal } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { ethers } from "ethers";
+
+interface LeaderboardEntry {
+  rank: number;
+  address: string;
+  username: string;
+  avatarUrl?: string;
+  nftCount: number;
+  bugBalance: string;
+  score: number;
+}
 
 export default function LeaderboardPage() {
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadLeaderboard();
+  }, []);
+
+  const loadLeaderboard = async () => {
+    setLoading(true);
+    try {
+      // For now, create mock data with realistic values
+      // TODO: Replace with real API call to fetch users and their stats
+      const mockData: LeaderboardEntry[] = [
+        {
+          rank: 1,
+          address: "0x1234567890123456789012345678901234567890",
+          username: "BugHunter",
+          avatarUrl: undefined,
+          nftCount: 42,
+          bugBalance: "15000",
+          score: 15042,
+        },
+        {
+          rank: 2,
+          address: "0x2234567890123456789012345678901234567890",
+          username: "InsectCollector",
+          avatarUrl: undefined,
+          nftCount: 38,
+          bugBalance: "12000",
+          score: 12038,
+        },
+        {
+          rank: 3,
+          address: "0x3234567890123456789012345678901234567890",
+          username: "NatureExplorer",
+          avatarUrl: undefined,
+          nftCount: 35,
+          bugBalance: "10500",
+          score: 10535,
+        },
+        {
+          rank: 4,
+          address: "0x4234567890123456789012345678901234567890",
+          username: "BugMaster",
+          avatarUrl: undefined,
+          nftCount: 28,
+          bugBalance: "8000",
+          score: 8028,
+        },
+        {
+          rank: 5,
+          address: "0x5234567890123456789012345678901234567890",
+          username: "SpeciesSeeker",
+          avatarUrl: undefined,
+          nftCount: 22,
+          bugBalance: "6500",
+          score: 6522,
+        },
+      ];
+
+      setLeaderboard(mockData);
+    } catch (error) {
+      console.error("Failed to load leaderboard:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getRankIcon = (rank: number) => {
+    switch (rank) {
+      case 1:
+        return <Medal className="h-6 w-6 text-amber-400" />;
+      case 2:
+        return <Medal className="h-6 w-6 text-slate-400" />;
+      case 3:
+        return <Medal className="h-6 w-6 text-orange-600" />;
+      default:
+        return <span className="text-lg font-bold text-muted-foreground">#{rank}</span>;
+    }
+  };
+
+  const getRankBadgeColor = (rank: number) => {
+    switch (rank) {
+      case 1:
+        return "bg-gradient-to-br from-amber-500/20 to-yellow-500/20 border-amber-500/50";
+      case 2:
+        return "bg-gradient-to-br from-slate-400/20 to-gray-400/20 border-slate-400/50";
+      case 3:
+        return "bg-gradient-to-br from-orange-600/20 to-orange-400/20 border-orange-600/50";
+      default:
+        return "bg-card border-border";
+    }
+  };
   return (
     <div className="min-h-screen bg-background pb-24">
       <div className="max-w-screen-xl mx-auto px-4 py-8">
@@ -15,59 +121,74 @@ export default function LeaderboardPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold">Leaderboard</h1>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Trophy className="h-8 w-8 text-amber-500" />
+              Leaderboard
+            </h1>
             <p className="text-muted-foreground">Top Bug Collectors</p>
           </div>
         </div>
 
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-2 border-purple-500/50 rounded-lg p-12 text-center">
-            <div className="flex justify-center mb-6">
-              <div className="relative">
-                <Trophy className="h-24 w-24 text-amber-500" />
-                <Sparkles className="h-8 w-8 text-purple-500 absolute -top-2 -right-2 animate-pulse" />
-              </div>
-            </div>
-            
-            <h2 className="text-3xl font-bold mb-4">Coming Soon!</h2>
-            <p className="text-lg text-muted-foreground mb-6">
-              The leaderboard will track top bug collectors, voters, and NFT holders.
-            </p>
-            
-            <div className="bg-card border border-border rounded-lg p-6 space-y-3 text-left">
-              <h3 className="font-semibold text-center mb-4">What to expect:</h3>
-              <div className="flex items-start gap-3">
-                <Trophy className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium">Collector Rankings</p>
-                  <p className="text-sm text-muted-foreground">See who has the most bug NFTs</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <TrendingUp className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium">Voting Accuracy</p>
-                  <p className="text-sm text-muted-foreground">Track your verification success rate</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Sparkles className="h-5 w-5 text-purple-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium">Rare Collection Bonus</p>
-                  <p className="text-sm text-muted-foreground">Extra points for discovering rare species</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-8">
-              <Link href="/">
-                <Button size="lg" className="bg-gradient-to-r from-purple-500 to-pink-500">
-                  Back to Home
-                </Button>
-              </Link>
-            </div>
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
           </div>
-        </div>
+        ) : (
+          <div className="max-w-3xl mx-auto space-y-3">
+            {leaderboard.map((entry) => (
+              <Card
+                key={entry.address}
+                className={`p-4 ${getRankBadgeColor(entry.rank)} transition-all hover:scale-[1.02]`}
+              >
+                <div className="flex items-center gap-4">
+                  {/* Rank */}
+                  <div className="flex-shrink-0 w-12 flex items-center justify-center">
+                    {getRankIcon(entry.rank)}
+                  </div>
+
+                  {/* Profile Picture */}
+                  <div className="flex-shrink-0">
+                    {entry.avatarUrl ? (
+                      <img
+                        src={entry.avatarUrl}
+                        alt={entry.username}
+                        className="h-12 w-12 rounded-full object-cover border-2 border-primary/30"
+                      />
+                    ) : (
+                      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
+                        <User className="h-6 w-6 text-white" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* User Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-lg truncate">{entry.username}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {entry.address.slice(0, 6)}...{entry.address.slice(-4)}
+                    </p>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="flex-shrink-0 text-right">
+                    <div className="flex items-center gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">NFTs</p>
+                        <p className="text-xl font-bold">{entry.nftCount}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">BUG</p>
+                        <p className="text-xl font-bold text-green-500">
+                          {parseFloat(entry.bugBalance).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

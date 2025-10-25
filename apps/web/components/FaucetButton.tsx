@@ -15,6 +15,8 @@ export function FaucetButton() {
   const [hasUnlocked, setHasUnlocked] = useState(false);
   const [checkingUnlock, setCheckingUnlock] = useState(true);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const [timeUntilNextClaim, setTimeUntilNextClaim] = useState<number>(0);
+  const [canClaim, setCanClaim] = useState(true);
 
   const checkUnlockStatus = async () => {
     if (!walletAddress || !isAuthenticated) {
@@ -32,6 +34,8 @@ export function FaucetButton() {
           if (bugTokenAddress) {
             const bugTokenABI = [
               "function hasUnlocked(address) external view returns (bool)",
+              "function canClaimFaucet(address) external view returns (bool)",
+              "function timeUntilNextClaim(address) external view returns (uint256)",
             ];
 
             const bugToken = new ethers.Contract(bugTokenAddress, bugTokenABI, provider);
@@ -39,6 +43,17 @@ export function FaucetButton() {
             
             console.log('✅ Contract unlock check:', unlocked);
             setHasUnlocked(unlocked);
+            
+            // If unlocked, check cooldown
+            if (unlocked) {
+              const canClaimNow = await bugToken.canClaimFaucet(walletAddress);
+              const timeRemaining = await bugToken.timeUntilNextClaim(walletAddress);
+              
+              console.log('Can claim:', canClaimNow, 'Time until next:', Number(timeRemaining));
+              setCanClaim(canClaimNow);
+              setTimeUntilNextClaim(Number(timeRemaining));
+            }
+            
             return; // Success, exit early
           }
         } catch (contractError) {
@@ -71,10 +86,47 @@ export function FaucetButton() {
     checkUnlockStatus();
   }, [walletAddress, isAuthenticated]);
 
+  // Countdown timer
+  useEffect(() => {
+    if (timeUntilNextClaim <= 0) {
+      setCanClaim(true);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setTimeUntilNextClaim((prev) => {
+        const newTime = prev - 1;
+        if (newTime <= 0) {
+          setCanClaim(true);
+          return 0;
+        }
+        return newTime;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [timeUntilNextClaim]);
+
   const handleUnlockSuccess = () => {
     setShowUnlockModal(false);
     setHasUnlocked(true);
     setMessage("🎉 Faucet unlocked! You received 100 BUG tokens!");
+  };
+
+  const formatTimeRemaining = (seconds: number): string => {
+    if (seconds <= 0) return "Ready to claim!";
+    
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${secs}s`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${secs}s`;
+    } else {
+      return `${secs}s`;
+    }
   };
 
   const claimFaucet = async () => {
@@ -158,6 +210,9 @@ export function FaucetButton() {
       console.log("✅ Faucet claimed!", receipt);
       setMessage("🎉 Successfully claimed 100 BUG tokens!");
       setError("");
+      
+      // Refresh cooldown status
+      setTimeout(() => checkUnlockStatus(), 2000);
     } catch (err: any) {
       console.error("❌ Faucet claim failed:", err);
       
@@ -244,13 +299,15 @@ export function FaucetButton() {
         <Coins className="h-8 w-8 text-green-500" />
         <div>
           <h3 className="text-lg font-bold">Free BUG Tokens</h3>
-          <p className="text-sm text-muted-foreground">Claim 100 BUG every 24 hours</p>
+          <p className="text-sm text-muted-foreground">
+            {canClaim ? "Claim 100 BUG every 24 hours" : `Next claim in ${formatTimeRemaining(timeUntilNextClaim)}`}
+          </p>
         </div>
       </div>
 
       <Button 
         onClick={claimFaucet} 
-        disabled={claiming}
+        disabled={claiming || !canClaim}
         className="w-full"
         size="lg"
       >
@@ -258,6 +315,10 @@ export function FaucetButton() {
           <>
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             Claiming...
+          </>
+        ) : !canClaim ? (
+          <>
+            ⏰ {formatTimeRemaining(timeUntilNextClaim)}
           </>
         ) : (
           <>

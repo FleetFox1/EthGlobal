@@ -609,6 +609,118 @@ export default function CollectionPage() {
     }
   };
 
+  const mintNFT = async (upload: UserUpload) => {
+    if (!window.ethereum || !walletAddress) return;
+
+    setSubmitting(upload.id);
+
+    try {
+      console.log('🎨 Minting NFT...');
+
+      // Check network and switch if needed
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const network = await provider.getNetwork();
+      const currentChainId = Number(network.chainId);
+      const sepoliaChainId = 11155111;
+      
+      if (currentChainId !== sepoliaChainId) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0xaa36a7' }],
+          });
+        } catch (switchError: any) {
+          if (switchError.code === 4902) {
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [{
+                chainId: '0xaa36a7',
+                chainName: 'Sepolia Testnet',
+                nativeCurrency: { name: 'Sepolia ETH', symbol: 'ETH', decimals: 18 },
+                rpcUrls: ['https://rpc.sepolia.org'],
+                blockExplorerUrls: ['https://sepolia.etherscan.io'],
+              }],
+            });
+          } else {
+            throw new Error('⚠️ Please switch to Sepolia testnet');
+          }
+        }
+      }
+
+      const signer = await provider.getSigner();
+
+      // Get NFT contract address
+      const BUG_NFT_ADDRESS = process.env.NEXT_PUBLIC_BUG_NFT_ADDRESS;
+      if (!BUG_NFT_ADDRESS) {
+        throw new Error('BugNFT contract address not configured');
+      }
+
+      // Calculate rarity based on vote count
+      const totalVotes = (upload.votesFor || 0) + (upload.votesAgainst || 0);
+      let rarityLevel = 0; // COMMON
+      if (totalVotes >= 20) rarityLevel = 4; // LEGENDARY
+      else if (totalVotes >= 10) rarityLevel = 3; // EPIC
+      else if (totalVotes >= 5) rarityLevel = 2; // RARE
+      else if (totalVotes >= 2) rarityLevel = 1; // UNCOMMON
+
+      // Import BugNFT ABI
+      const bugNFTABI = (await import('@/lib/contracts/BugNFT.json')).default;
+      const bugNFT = new ethers.Contract(BUG_NFT_ADDRESS, bugNFTABI, signer);
+
+      console.log('📝 Minting with:', {
+        to: walletAddress,
+        ipfsHash: upload.metadataCid,
+        rarity: rarityLevel,
+        voteCount: upload.votesFor || 0,
+      });
+
+      // Call mintBug function
+      const tx = await bugNFT.mintBug(
+        walletAddress,
+        upload.metadataCid,
+        rarityLevel,
+        upload.votesFor || 0
+      );
+
+      console.log('⏳ Waiting for confirmation...');
+      const receipt = await tx.wait();
+
+      console.log('✅ NFT Minted!', receipt.hash);
+
+      // Get the minted token ID from the event
+      const event = receipt.logs.find((log: any) => {
+        try {
+          const parsed = bugNFT.interface.parseLog(log);
+          return parsed?.name === 'BugMinted';
+        } catch {
+          return false;
+        }
+      });
+
+      let tokenId = 'Unknown';
+      if (event) {
+        const parsed = bugNFT.interface.parseLog(event);
+        tokenId = parsed?.args?.tokenId?.toString() || 'Unknown';
+      }
+
+      alert(`🎉 NFT Minted Successfully!\n\n✨ Token ID: ${tokenId}\n🎨 Rarity: ${['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'][rarityLevel]}\n📊 Based on ${upload.votesFor || 0} upvotes\n\n🔗 Transaction: ${receipt.hash}`);
+
+      // Reload uploads to update status
+      await loadUploads();
+    } catch (error: any) {
+      const err = error as Error;
+      console.error('Failed to mint NFT:', err);
+      
+      if (err.message?.includes('Not authorized to mint')) {
+        alert(`❌ Minting Error\n\nThe contract needs to authorize minting. This requires the contract owner to call authorizeM inter(yourAddress).\n\nPlease contact the admin.`);
+      } else {
+        alert(`Failed to mint NFT: ${err.message}`);
+      }
+    } finally {
+      setSubmitting(null);
+    }
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4 pb-24">
@@ -1025,8 +1137,7 @@ export default function CollectionPage() {
                               <Button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  // TODO: Add mintNFT function that calls blockchain
-                                  alert(`Ready to mint ${rarity.tier} NFT!\n\nThis will:\n✅ Mint on blockchain (costs gas)\n✨ Create ${rarity.tier} collectible card\n🎨 Special ${rarity.tier} design with holographic effects\n\nMint function coming soon!`);
+                                  mintNFT(upload);
                                 }}
                                 disabled={submitting === upload.id}
                                 className={`w-full font-bold shadow-lg ${rarity.bgColor} hover:opacity-90 border-2 ${rarity.borderColor}`}

@@ -80,6 +80,45 @@ export default function ProfileV2() {
     }
   }, [profile]);
 
+  // Load settings from localStorage
+  useEffect(() => {
+    if (!address) return;
+
+    try {
+      const savedSettings = localStorage.getItem(`bugdex_settings_${address}`);
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        console.log("📥 Loaded settings from localStorage:", settings);
+
+        // Restore notification settings
+        if (settings.notifications) {
+          setEmailNotifications(settings.notifications.email ?? true);
+          setVoteNotifications(settings.notifications.votes ?? true);
+          setMintNotifications(settings.notifications.mints ?? true);
+        }
+
+        // Restore privacy settings
+        if (settings.privacy) {
+          setPublicCollection(settings.privacy.publicCollection ?? true);
+          setShowWalletAddress(settings.privacy.showWalletAddress ?? false);
+          setShareLocation(settings.privacy.shareLocation ?? true);
+        }
+
+        // Restore display settings (theme handled by next-themes)
+        if (settings.display) {
+          setCurrency(settings.display.currency ?? "USD");
+        }
+
+        // Restore blockchain settings
+        if (settings.blockchain) {
+          setDefaultPayment(settings.blockchain.defaultPayment ?? "ETH");
+        }
+      }
+    } catch (error) {
+      console.error("❌ Failed to load settings from localStorage:", error);
+    }
+  }, [address]);
+
   const loadProfileData = async () => {
     if (!address) return;
 
@@ -111,13 +150,33 @@ export default function ProfileV2() {
     setSaved(false);
     
     try {
-      console.log("💾 Saving profile:", {
-        username,
-        bio,
-        profilePicture,
-      });
+      console.log("💾 Saving profile and settings...");
 
-      // Save to database
+      // Save all settings to localStorage
+      const settings = {
+        notifications: {
+          email: emailNotifications,
+          votes: voteNotifications,
+          mints: mintNotifications,
+        },
+        privacy: {
+          publicCollection,
+          showWalletAddress,
+          shareLocation,
+        },
+        display: {
+          theme: theme || 'dark',
+          currency,
+        },
+        blockchain: {
+          defaultPayment,
+        },
+      };
+
+      localStorage.setItem(`bugdex_settings_${address}`, JSON.stringify(settings));
+      console.log("✅ Settings saved to localStorage:", settings);
+
+      // Save profile to database
       const response = await fetch("/api/user/update-profile", {
         method: "PUT",
         headers: {
@@ -128,6 +187,7 @@ export default function ProfileV2() {
           username,
           bio,
           avatarUrl: profilePicture,
+          settings, // Include settings in database save
         }),
       });
 

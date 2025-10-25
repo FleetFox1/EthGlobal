@@ -3,6 +3,7 @@
 import { useUser } from "@/lib/useUser";
 import { useWallet } from "@/lib/useWallet";
 import { useBugToken, useBugNFT, areContractsConfigured } from "@/lib/contract-hooks";
+import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { 
@@ -35,6 +36,7 @@ export default function ProfileV2() {
   const { isConnected, address } = useWallet();
   const { getBalance: getBugBalance } = useBugToken();
   const { getBalance: getNFTBalance } = useBugNFT();
+  const { theme, setTheme } = useTheme();
   
   const [onChainStats, setOnChainStats] = useState<OnChainStats | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
@@ -56,8 +58,7 @@ export default function ProfileV2() {
   const [showWalletAddress, setShowWalletAddress] = useState(false);
   const [shareLocation, setShareLocation] = useState(true);
   
-  // Display Preferences
-  const [theme, setTheme] = useState<"light" | "dark">("dark");
+  // Display Preferences  
   const [currency, setCurrency] = useState<"USD" | "ETH" | "PYUSD">("USD");
   
   // Blockchain Settings

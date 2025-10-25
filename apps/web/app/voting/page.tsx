@@ -132,7 +132,8 @@ export default function VotingPage() {
           try {
             const voteRes = await fetch(`/api/vote-offchain?uploadId=${sub.id}&voterAddress=${address}`);
             const voteData = await voteRes.json();
-            hasVoted = voteData.hasVoted || false;
+            // API returns { success: true, data: { hasVoted: true } }
+            hasVoted = voteData.data?.hasVoted || false;
           } catch (e) {
             console.error('Error checking vote status:', e);
           }

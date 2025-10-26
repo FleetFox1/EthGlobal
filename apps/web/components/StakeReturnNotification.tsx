@@ -25,7 +25,6 @@ export function StakeReturnNotification() {
     }
 
     let isMounted = true; // Prevent state updates after unmount
-    let intervalId: NodeJS.Timeout;
 
     const checkCompletedStakes = async () => {
       try {
@@ -79,7 +78,7 @@ export function StakeReturnNotification() {
     checkCompletedStakes();
 
     // Check every 30 seconds (only if still mounted)
-    intervalId = setInterval(() => {
+    const intervalId = setInterval(() => {
       if (isMounted) {
         checkCompletedStakes();
       }

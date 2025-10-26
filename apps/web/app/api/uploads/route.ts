@@ -162,7 +162,11 @@ export async function GET(request: NextRequest) {
         votes_against as "votesAgainst",
         voting_deadline as "votingDeadline",
         voting_resolved as "votingResolved",
-        voting_approved as "votingApproved"
+        voting_approved as "votingApproved",
+        nft_minted as "nftMinted",
+        nft_token_id as "nftTokenId",
+        nft_contract_address as "nftContractAddress",
+        nft_transaction_hash as "nftTransactionHash"
       FROM uploads
       WHERE wallet_address = ${walletAddress}
       ORDER BY timestamp DESC
@@ -188,6 +192,11 @@ export async function GET(request: NextRequest) {
       votingDeadline: row.votingDeadline,
       votingResolved: row.votingResolved || false,
       votingApproved: row.votingApproved || false,
+      // NFT tracking data
+      nftMinted: row.nftMinted || false,
+      nftTokenId: row.nftTokenId,
+      nftContractAddress: row.nftContractAddress,
+      nftTransactionHash: row.nftTransactionHash,
     }));
 
     return NextResponse.json({

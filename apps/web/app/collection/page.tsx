@@ -431,6 +431,13 @@ export default function CollectionPage() {
 
   // Filter uploads by minted status
   // Check both blockchain nftClaimed flag AND database nft_minted flag
+  console.log('🎨 NFT Filter Debug:', uploads.map(u => ({
+    id: u.id.substring(0, 20),
+    blockchainNftClaimed: u.blockchainStatus?.nftClaimed,
+    databaseNftMinted: u.nftMinted,
+    willShowInOnChain: u.blockchainStatus?.nftClaimed || u.nftMinted
+  })));
+  
   const offChainUploads = uploads.filter(u => !u.blockchainStatus?.nftClaimed && !u.nftMinted);
   const onChainUploads = uploads.filter(u => u.blockchainStatus?.nftClaimed || u.nftMinted);
 

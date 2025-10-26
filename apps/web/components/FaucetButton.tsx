@@ -200,11 +200,26 @@ export function FaucetButton() {
       
       console.log("✅ Faucet claimed!", receipt);
       
-      // Show Blockscout transaction link
+      // Show Blockscout transaction link with confirm dialog
       const { getTransactionUrl } = await import('@/lib/blockscout');
       const explorerUrl = getTransactionUrl(receipt.hash);
-      setMessage(`🎉 Successfully claimed 100 BUG tokens! [View on Explorer](${explorerUrl})`);
       
+      // Copy to clipboard
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(explorerUrl);
+      }
+      
+      const shouldOpen = confirm(
+        `✅ Successfully claimed 100 BUG tokens!\n\n` +
+        `🔗 Transaction link copied to clipboard!\n\n` +
+        `Click OK to open Blockscout Explorer`
+      );
+      
+      if (shouldOpen) {
+        window.open(explorerUrl, '_blank', 'noopener,noreferrer');
+      }
+      
+      setMessage("🎉 Successfully claimed 100 BUG tokens!");
       setError("");
       
       // Refresh cooldown status

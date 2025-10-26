@@ -12,11 +12,15 @@ import {
   Settings,
   TrendingUp,
   Database,
-  Loader2
+  Loader2,
+  X,
+  AlertTriangle,
+  CheckCircle
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import VotingConfig from "@/components/VotingConfig";
+import Link from "next/link";
 
 export default function AdminPage() {
   const { isAdmin, isOwner, loading, walletAddress, isAuthenticated } = useAdmin();
@@ -29,6 +33,11 @@ export default function AdminPage() {
   });
   const [dbStats, setDbStats] = useState<any>(null);
   const [loadingStats, setLoadingStats] = useState(false);
+  
+  // Admin action states
+  const [showMinterModal, setShowMinterModal] = useState(false);
+  const [showSubmissionsModal, setShowSubmissionsModal] = useState(false);
+  const [showEmergencyModal, setShowEmergencyModal] = useState(false);
 
   useEffect(() => {
     async function loadStats() {
@@ -435,19 +444,31 @@ export default function AdminPage() {
             Admin Actions
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Button variant="outline" className="justify-start h-auto py-4">
+            <Button 
+              variant="outline" 
+              className="justify-start h-auto py-4"
+              onClick={() => setShowMinterModal(true)}
+            >
               <div className="text-left">
                 <p className="font-semibold">Manage Minters</p>
                 <p className="text-sm text-muted-foreground">Add or remove authorized minters</p>
               </div>
             </Button>
-            <Button variant="outline" className="justify-start h-auto py-4">
+            <Button 
+              variant="outline" 
+              className="justify-start h-auto py-4"
+              onClick={() => setShowSubmissionsModal(true)}
+            >
               <div className="text-left">
                 <p className="font-semibold">View All Submissions</p>
                 <p className="text-sm text-muted-foreground">Monitor bug submissions</p>
               </div>
             </Button>
-            <Button variant="outline" className="justify-start h-auto py-4">
+            <Button 
+              variant="outline" 
+              className="justify-start h-auto py-4"
+              onClick={() => setShowEmergencyModal(true)}
+            >
               <div className="text-left">
                 <p className="font-semibold">Emergency Controls</p>
                 <p className="text-sm text-muted-foreground">Pause contracts or emergency actions</p>
@@ -505,6 +526,163 @@ export default function AdminPage() {
             </div>
           </div>
         </Card>
+
+        {/* Minter Management Modal */}
+        {showMinterModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <Card className="max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold">Manage Minters</h2>
+                  <Button variant="ghost" size="icon" onClick={() => setShowMinterModal(false)}>
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
+                
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="font-semibold mb-2">Current Minters</h3>
+                    <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-semibold text-yellow-800 dark:text-yellow-200">Contract Management Required</p>
+                          <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                            Minter management requires direct contract interaction. Use the Hardhat scripts in <code className="bg-yellow-100 dark:bg-yellow-900/40 px-2 py-0.5 rounded">apps/contracts/scripts/</code>
+                          </p>
+                          <div className="mt-3 p-3 bg-white dark:bg-gray-900 rounded border border-yellow-200 dark:border-yellow-800">
+                            <p className="text-sm font-mono text-gray-700 dark:text-gray-300">
+                              npx hardhat run scripts/authorize-minter.ts --network sepolia
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* All Submissions Modal */}
+        {showSubmissionsModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <Card className="max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold">All Bug Submissions</h2>
+                  <Button variant="ghost" size="icon" onClick={() => setShowSubmissionsModal(false)}>
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
+                
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-blue-800 dark:text-blue-200">View All Submissions</p>
+                      <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                        Navigate to the voting page to see all submissions and manage voting.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <Link href="/voting">
+                  <Button className="w-full">
+                    Go to Voting Page →
+                  </Button>
+                </Link>
+
+                {dbStats && dbStats.recentActivity && (
+                  <div className="mt-6">
+                    <h3 className="font-semibold mb-3">Recent Activity</h3>
+                    <div className="space-y-2">
+                      {dbStats.recentActivity.slice(0, 5).map((item: any) => (
+                        <div key={item.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                          <div>
+                            <p className="font-mono text-sm">{item.wallet_address.substring(0, 10)}...</p>
+                            <p className="text-xs text-muted-foreground">
+                              {item.voting_status} • {item.votes_for} votes
+                            </p>
+                          </div>
+                          <div className="text-right text-xs text-muted-foreground">
+                            {new Date(item.created_at).toLocaleDateString()}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* Emergency Controls Modal */}
+        {showEmergencyModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <Card className="max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold flex items-center gap-2">
+                    <AlertTriangle className="h-6 w-6 text-red-500" />
+                    Emergency Controls
+                  </h2>
+                  <Button variant="ghost" size="icon" onClick={() => setShowEmergencyModal(false)}>
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
+                
+                <div className="space-y-6">
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-red-800 dark:text-red-200">Critical Actions</p>
+                        <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+                          Emergency controls must be executed via contract scripts. Use only in case of security issues or critical bugs.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold mb-3">Available Emergency Actions:</h3>
+                    <ul className="space-y-2 text-sm text-muted-foreground">
+                      <li className="flex items-start gap-2">
+                        <span className="text-red-500">•</span>
+                        <div>
+                          <strong>Pause Voting:</strong> Stop all voting activities (requires contract owner)
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-red-500">•</span>
+                        <div>
+                          <strong>Pause Minting:</strong> Stop NFT minting (requires contract owner)
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-red-500">•</span>
+                        <div>
+                          <strong>Emergency Withdraw:</strong> Withdraw stuck funds from contracts
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
+                    <p className="text-sm font-semibold mb-2">Contract Scripts Location:</p>
+                    <code className="text-xs bg-white dark:bg-gray-900 px-3 py-2 rounded block">
+                      apps/contracts/scripts/
+                    </code>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );

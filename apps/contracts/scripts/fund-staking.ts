@@ -14,8 +14,8 @@ async function main() {
   const [deployer] = await ethers.getSigners();
   console.log("Funding from account:", deployer.address);
 
-  const BUG_TOKEN_ADDRESS = process.env.BUG_TOKEN_V2_ADDRESS || "0x431185c8d1391fFD2eeB2aA4870015a1061f03e1";
-  const STAKING_CONTRACT_ADDRESS = process.env.STAKING_CONTRACT_ADDRESS || "0x68E8DF1350C3500270ae9226a81Ca1771F2eD542";
+  const BUG_TOKEN_ADDRESS = process.env.BUG_TOKEN_V3_ADDRESS || "0x5f7421B1e03D644CaFD3B13b2da2557748571a67";
+  const STAKING_CONTRACT_ADDRESS = process.env.STAKING_CONTRACT_ADDRESS || "0xD59Ae51dfb445660a1191b6F256A2ebD78460aa5";
 
   console.log("BugToken address:", BUG_TOKEN_ADDRESS);
   console.log("Staking contract:", STAKING_CONTRACT_ADDRESS);

@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Wallet, LogOut, User, Settings, ChevronDown } from 'lucide-react';
+import { Wallet, LogOut, User, Settings, ChevronDown, HelpCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface WalletButtonProps {
@@ -75,6 +75,10 @@ export function WalletButton({ variant = 'default' }: WalletButtonProps) {
           <DropdownMenuItem onClick={() => router.push('/profile')} className="cursor-pointer">
             <Settings className="h-4 w-4" />
             <span>Profile Settings</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push('/help')} className="cursor-pointer">
+            <HelpCircle className="h-4 w-4" />
+            <span>Help & Setup</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={disconnect} className="cursor-pointer text-red-500 focus:text-red-500">

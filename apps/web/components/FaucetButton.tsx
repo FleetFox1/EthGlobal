@@ -16,7 +16,7 @@ export function FaucetButton() {
   const [checkingUnlock, setCheckingUnlock] = useState(true);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [timeUntilNextClaim, setTimeUntilNextClaim] = useState<number>(0);
-  const [canClaim, setCanClaim] = useState(true);
+  const [canClaim, setCanClaim] = useState(false); // Default to false until contract confirms
 
   const checkUnlockStatus = async () => {
     if (!walletAddress || !isAuthenticated) {
@@ -61,11 +61,18 @@ export function FaucetButton() {
             setTimeUntilNextClaim(Number(timeRemaining));
           } else {
             console.error('❌ No BUG token address configured!');
+            setCanClaim(false);
+            setTimeUntilNextClaim(86400); // 24 hours default
           }
         } catch (contractError) {
           console.error('⚠️ Contract cooldown check failed:', contractError);
-          // Keep current state - don't change canClaim
+          // Default to cooldown active if contract check fails
+          setCanClaim(false);
+          setTimeUntilNextClaim(86400); // 24 hours default
         }
+      } else if (!dbUnlocked) {
+        // Not unlocked at all
+        setCanClaim(false);
       }
       
     } catch (error) {

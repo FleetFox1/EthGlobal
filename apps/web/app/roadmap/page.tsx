@@ -56,7 +56,7 @@ export default function RoadmapPage() {
                   with BUG token prizes.
                 </p>
                 <ul className="text-xs text-muted-foreground space-y-1 ml-4 list-disc">
-                  <li>Bug type advantages (Flying > Crawling, etc.)</li>
+                  <li>Bug type advantages (Flying &gt; Crawling, etc.)</li>
                   <li>Card evolution system (combine duplicates)</li>
                   <li>Tournament entry fees create revenue</li>
                 </ul>

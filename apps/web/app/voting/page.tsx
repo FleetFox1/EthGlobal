@@ -238,6 +238,18 @@ export default function VotingPage() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
+      {/* Testnet Disclaimer Banner */}
+      <div className="bg-yellow-500/10 border-b border-yellow-500/30">
+        <div className="max-w-screen-xl mx-auto px-4 py-2">
+          <div className="flex items-center justify-center gap-2 text-xs sm:text-sm">
+            <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
+            <p className="text-yellow-800 dark:text-yellow-200 font-medium">
+              🧪 Testnet Demo • Sepolia Network • Vote freely, no gas costs
+            </p>
+          </div>
+        </div>
+      </div>
+
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-3 mb-4">

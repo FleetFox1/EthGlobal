@@ -150,6 +150,18 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
+      {/* Testnet Disclaimer Banner */}
+      <div className="bg-yellow-500/10 border-b border-yellow-500/30">
+        <div className="max-w-screen-xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-center gap-2 text-sm">
+            <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
+            <p className="text-yellow-800 dark:text-yellow-200 font-medium">
+              🧪 Testnet Environment • Sepolia Network • For Testing Only
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="max-w-screen-xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">

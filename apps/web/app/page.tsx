@@ -7,6 +7,18 @@ import Link from "next/link";
 export default function Home() {
   return (
     <div className="min-h-screen bg-background">
+      {/* Testnet Disclaimer Banner */}
+      <div className="bg-yellow-500/10 border-b border-yellow-500/30">
+        <div className="max-w-screen-xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-center gap-2 text-sm">
+            <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
+            <p className="text-yellow-800 dark:text-yellow-200 font-medium">
+              🧪 Testnet Demo • Running on Sepolia • No real funds required
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Main Content Area */}
       <main className="pb-24 px-4 pt-8">
         <div className="max-w-screen-xl mx-auto">

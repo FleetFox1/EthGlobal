@@ -294,8 +294,9 @@ export function UnlockFaucetModal({
         throw new Error(`Wallet mismatch: Connected ${signerAddress}, expected ${walletAddress}`);
       }
 
-      // Use V2 contract for unlock functionality
-      const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_V2_ADDRESS || process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS;
+      // Use V3 contract for unlock functionality
+      const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_V3_ADDRESS || 
+                              process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS;
       const pyusdAddress = process.env.NEXT_PUBLIC_PYUSD_ADDRESS;
 
       if (!bugTokenAddress || !pyusdAddress) {

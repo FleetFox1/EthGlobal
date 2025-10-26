@@ -32,47 +32,59 @@ export default function AdminPage() {
 
   useEffect(() => {
     async function loadStats() {
-      if (!isAdmin || !window.ethereum) return;
+      if (!isAdmin) return;
 
       try {
         setLoadingStats(true);
-        const provider = new ethers.BrowserProvider(window.ethereum);
         
-        const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS!;
-        const bugNFTAddress = process.env.NEXT_PUBLIC_BUG_NFT_ADDRESS!;
-
-        const tokenABI = [
-          "function totalSupply() view returns (uint256)",
-          "function MAX_SUPPLY() view returns (uint256)",
-        ];
-        const nftABI = [
-          "function totalSupply() view returns (uint256)",
-        ];
-
-        const bugToken = new ethers.Contract(bugTokenAddress, tokenABI, provider);
-        const bugNFT = new ethers.Contract(bugNFTAddress, nftABI, provider);
-
-        const [totalSupply, maxSupply, totalNFTs] = await Promise.all([
-          bugToken.totalSupply(),
-          bugToken.MAX_SUPPLY(),
-          bugNFT.totalSupply(),
-        ]);
-
-        // Load database stats
+        // Load database stats first (primary source of truth)
         const dbRes = await fetch('/api/admin/stats');
         const dbData = await dbRes.json();
         
         if (dbData.success) {
           setDbStats(dbData.data);
+          
+          // Update basic stats from DB
+          setStats(prev => ({
+            ...prev,
+            totalNFTs: dbData.data.submissions?.total?.toString() || "0",
+            activeSubmissions: dbData.data.votes?.active?.toString() || "0",
+            totalVotes: dbData.data.votes?.total?.toString() || "0",
+          }));
         }
 
-        setStats({
-          totalSupply: ethers.formatEther(totalSupply),
-          maxSupply: ethers.formatEther(maxSupply),
-          totalNFTs: totalNFTs.toString(),
-          activeSubmissions: dbData.success ? dbData.data.votes.active.toString() : "0",
-          totalVotes: dbData.success ? dbData.data.votes.total.toString() : "0",
-        });
+        // Try to load on-chain data (optional, don't fail if it errors)
+        if (window.ethereum) {
+          try {
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            
+            const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS;
+            const bugNFTAddress = process.env.NEXT_PUBLIC_BUG_NFT_ADDRESS;
+
+            if (bugTokenAddress) {
+              const tokenABI = [
+                "function totalSupply() view returns (uint256)",
+                "function MAX_SUPPLY() view returns (uint256)",
+              ];
+
+              const bugToken = new ethers.Contract(bugTokenAddress, tokenABI, provider);
+
+              const [totalSupply, maxSupply] = await Promise.all([
+                bugToken.totalSupply(),
+                bugToken.MAX_SUPPLY(),
+              ]);
+
+              setStats(prev => ({
+                ...prev,
+                totalSupply: ethers.formatEther(totalSupply),
+                maxSupply: ethers.formatEther(maxSupply),
+              }));
+            }
+          } catch (contractError) {
+            console.warn("Could not load on-chain stats (this is okay):", contractError);
+            // Continue without on-chain stats - DB stats are sufficient
+          }
+        }
       } catch (error) {
         console.error("Error loading admin stats:", error);
       } finally {

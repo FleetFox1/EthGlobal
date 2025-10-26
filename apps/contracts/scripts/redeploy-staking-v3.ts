@@ -15,8 +15,8 @@ async function main() {
   const balance = await ethers.provider.getBalance(deployer.address);
   console.log("💰 Account balance:", ethers.formatEther(balance), "ETH\n");
 
-  // Use BugTokenV3 address
-  const BUG_TOKEN_V3 = "0x5f7421B1e03D644CaFD3B13b2da2557748571a67";
+  // Use BugTokenV3 address (NEW deployment with cooldown functions)
+  const BUG_TOKEN_V3 = "0x496d97744e6F313b62B3cfB6b76f303598c1a883";
   
   console.log("📋 Configuration:");
   console.log("  BugTokenV3:", BUG_TOKEN_V3);

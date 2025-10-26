@@ -23,7 +23,7 @@ export function StakeReturnNotification() {
 
     const checkCompletedStakes = async () => {
       try {
-        const response = await fetch(`/api/uploads?walletAddress=${address}`);
+        const response = await fetch(`/api/uploads?address=${address}`);
         const data = await response.json();
 
         if (!data.success || !data.data) return;

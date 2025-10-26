@@ -53,17 +53,9 @@ export function PrivyProvider({ children }: { children: React.ReactNode }) {
         appearance: {
           theme: 'dark',
           accentColor: '#22c55e',
-          logo: 'https://i.imgur.com/your-logo.png',
+          logo: 'https://bugdex.life/logo.jpg',
         },
         loginMethods: ['wallet'],
-        embeddedWallets: {
-          ethereum: {
-            createOnLogin: 'off',
-          },
-          solana: {
-            createOnLogin: 'off',
-          },
-        },
       }}
     >
       <QueryClientProvider client={queryClient}>

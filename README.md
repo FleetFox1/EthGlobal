@@ -1,35 +1,119 @@
 # 🐛 BugDex
 
-> A Web3 mobile-first app for discovering and collecting bugs - built for EthGlobal 2025
+> A Web3 mobile-first bug photography dApp with community voting and NFT collection - built for **ETHOnline 2025**
 
 ![Next.js](https://img.shields.io/badge/Next.js-15.5-black?style=flat-square&logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?style=flat-square&logo=typescript)
 ![Solidity](https://img.shields.io/badge/Solidity-0.8.27-gray?style=flat-square&logo=solidity)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.1-38bdf8?style=flat-square&logo=tailwindcss)
 
+**Live App**: [bugdex.life](https://bugdex.life) | **Network**: Sepolia Testnet | **Explorer**: [bugdex-explorer.cloud.blockscout.com](https://bugdex-explorer.cloud.blockscout.com)
+
+## 🏆 Prize Tracks
+
+BugDex integrates sponsor technologies to deliver a seamless mobile-first payment and NFT experience:
+
+### 💵 PYUSD (PayPal USD) - Consumer Payments
+**Prize Track**: Consumer Champion ($3,500) + Grand Prize ($4,500)
+
+BugDex demonstrates two powerful PYUSD consumer use cases:
+
+1. **Faucet Unlock Payment** - Users pay **$1 in PYUSD** (or ETH) to unlock unlimited access to claim 100 BUG tokens every 24 hours. Stablecoin option ensures predictable pricing regardless of crypto volatility.
+
+2. **Conservation Donations** - Direct PYUSD donations to wildlife conservation organizations. Users can vote with BUG tokens to influence quarterly fund distribution. Transparent on-chain payments for real-world impact.
+
+- **Contract**: BugTokenV3 with PYUSD integration
+- **PYUSD Address**: `0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9` (Sepolia)
+- **Why it matters**: Mobile-first stablecoin payments for both in-app economy and charitable giving
+
+### 🔍 Blockscout - Custom Explorer
+**Prize Track**: Best use of Autoscout ($3,500)
+
+Deployed a custom-branded explorer at **bugdex-explorer.cloud.blockscout.com** that keeps users in the BugDex ecosystem. Transaction popups after key actions (unlock, stake, mint) provide transparency without leaving the app.
+
+- **Explorer**: [bugdex-explorer.cloud.blockscout.com](https://bugdex-explorer.cloud.blockscout.com)
+- **Integration**: Confirm dialogs with transaction links (bypasses mobile popup blockers)
+- **Why it matters**: Custom branding + chain indexing creates trust for a new testnet dApp
+
+### 🔮 Pyth Network - Price Oracle
+**Prize Track**: Most Innovative use of Pull Oracle ($3,000)
+
+Uses **Pyth's ETH/USD price feed** to dynamically calculate the exact ETH needed for a $1 faucet unlock. Ensures the unlock cost stays at $1 regardless of ETH price volatility.
+
+- **Oracle**: `0xDd24F84d36BF92C65F92307595335bdFab5Bbd21` (Sepolia)
+- **Price Feed**: ETH/USD (`0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace`)
+- **Implementation**: Pull-based updates fetched from Hermes before each transaction
+- **Why it matters**: Dynamic pricing ensures fair consumer payments in volatile crypto markets
+
+**Total Prize Pool**: Up to **$18,000** across 3 sponsor tracks
+
+---
+
+## 🚨 The Problem: Biodiversity Crisis Meets Data Gap
+
+Over **40% of insect species are declining globally**, threatening ecosystems and food security. Yet biodiversity monitoring remains:
+- **Expensive** - Requires professional researchers and equipment
+- **Slow** - Data collection happens sporadically with long delays
+- **Limited** - Restricted to specific regions with research funding
+- **Siloed** - Data trapped in academic institutions, not accessible in real-time
+
+Meanwhile, conservation organizations struggle with funding transparency and lack of real-time field data from diverse geographic locations.
+
+## 💡 Our Solution: DeSci Meets Conservation Gaming
+
+BugDex transforms biodiversity monitoring into an engaging, economically sustainable activity by combining:
+
+🔬 **Decentralized Science (DeSci)** - Crowdsourced insect observations with on-chain provenance and IPFS storage  
+💰 **Web3 Incentives** - Token rewards make conservation data collection financially viable  
+🌍 **Direct Impact** - PYUSD donations flow directly to conservation organizations via community governance  
+🎮 **Gamification** - NFT collecting mechanics make biodiversity research accessible and fun
+
+Every photo becomes both a collectible NFT and valuable scientific data - geo-tagged, timestamped, and community-verified.
+
+---
+
 ## 📖 About
 
-**BugDex** is a Web3-powered bug collection platform where users discover, vote on, and collect bug NFTs. Built with smart contracts, IPFS storage, and a mobile-first interface.
+**BugDex** is a mobile-first DeSci (Decentralized Science) platform that incentivizes global biodiversity data collection. Users photograph insects, submit for community verification, and mint verified observations as NFTs. The platform demonstrates how Web3 can solve real-world problems by making scientific data collection economically sustainable and accessible to everyone.
+
+**Think**: iNaturalist meets Pokémon GO, powered by blockchain incentives and transparent conservation funding.
 
 ### How It Works
-1. 📸 **Discover** - Scan or upload bug images
-2. 🗳️ **Vote** - Community votes on submissions (stake 10 BUG tokens)
-3. 🎁 **Collect** - Approved bugs become NFTs + voters earn rewards
-4. 💎 **Trade** - Collect rare bugs and build your collection
+1. 💰 **Unlock Faucet** - Pay $1 (PYUSD or ETH via Pyth oracle) to unlock unlimited 24h claims
+2. 📸 **Discover** - Photograph bugs with your phone camera (IPFS storage)
+3. 💎 **Stake & Submit** - Stake 10 BUG tokens to submit for voting
+4. 🗳️ **Community Votes** - Other users vote FOR or AGAINST (free, off-chain signatures)
+5. 🎁 **Mint NFT** - Approved bugs (2+ net votes) become NFTs with rarity tiers
+6. 🏆 **Earn Rewards** - Voters earn 5 BUG per upvote, discoverers keep the NFT
+7. 🌍 **Support Conservation** - Donate PYUSD to wildlife organizations with transparent on-chain tracking
 
-## ✨ Features
+## ✨ Key Features
 
-### Frontend
-- 🎯 **Mobile-First Design** - PWA-ready, optimized for phones
-- � **Camera Scanning** - Capture bugs with live camera or upload photos
-- �📱 **Bottom Navigation** - Hamburger menu, scan button, settings
-- 📚 **Collection View** - Grid/list view toggle with filters and search
-- 🏆 **Leaderboard** - Top collectors ranking with stats
-- 👤 **User Profile** - Stats, achievements, and activity feed
-- ℹ️ **About Page** - Project info and tokenomics
-- 🎨 **Modern UI** - ShadCN UI components with Tailwind CSS
-- 🌗 **Dark Mode** - Full theme support
-- ⚡ **Fast & Responsive** - Next.js 15 with Turbopack
+### 💳 Payments & Tokenomics
+- 💵 **PYUSD Integration** - Pay $1 in stablecoin to unlock faucet (alternative to ETH)
+- 🔮 **Dynamic Pricing** - Pyth oracle ensures $1 = actual $1 worth of ETH in real-time
+- 🪙 **Faucet System** - Claim 100 BUG tokens every 24 hours after unlock
+- � **Staking** - Lock 10 BUG to submit bugs for voting
+- 🎁 **Rewards** - Earn 5 BUG per upvote received on submissions
+
+### 🔍 Blockchain Transparency
+- � **Custom Blockscout Explorer** - Branded chain explorer with transaction tracking
+- 📊 **Transaction Popups** - Confirm dialogs with explorer links after key actions
+- ✅ **On-Chain Verification** - All payments, stakes, and mints are transparent
+
+### 📱 Mobile-First Experience
+- 🎯 **PWA-Ready** - Install as app on iOS/Android
+- 📷 **Camera Integration** - Live photo capture or upload from gallery
+- 📱 **Bottom Navigation** - Thumb-friendly UI with large touch targets
+- 🌗 **Dark Mode** - Full theme support for day/night usage
+- ⚡ **Fast Performance** - Next.js 15 with Turbopack, optimized images
+
+### 🐛 Bug Collection System
+- 📸 **Photo Upload** - IPFS storage via Lighthouse (decentralized)
+- 🗳️ **Off-Chain Voting** - Free voting with signature verification (no gas fees)
+- 🎨 **NFT Minting** - Approved bugs become ERC-721 NFTs with rarity tiers
+- 🏆 **Rarity System** - Common (0-1), Uncommon (2-4), Rare (5-9), Epic (10-19), Legendary (20+)
+- 📊 **Leaderboard** - Track top collectors and voters
 - 🎭 **Smooth Animations** - Polished transitions and hover effects
 - 📱 **Mobile Safe-Area** - iOS/Android notch support
 
@@ -42,19 +126,27 @@
 ## 🏗️ Tech Stack
 
 ### Frontend
-- **Framework**: [Next.js 15](https://nextjs.org/) (App Router)
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Framework**: [Next.js 15](https://nextjs.org/) (App Router, Turbopack)
+- **Language**: [TypeScript 5.9](https://www.typescriptlang.org/)
 - **Styling**: [Tailwind CSS 4.1](https://tailwindcss.com/)
-- **UI**: [ShadCN UI](https://ui.shadcn.com/)
+- **UI Components**: [ShadCN UI](https://ui.shadcn.com/)
 - **Icons**: [Lucide React](https://lucide.dev/)
-
-### Backend / Blockchain
-- **Smart Contracts**: [Solidity 0.8.27](https://soliditylang.org/)
-- **Framework**: [Hardhat](https://hardhat.org/)
-- **Libraries**: [OpenZeppelin v5](https://www.openzeppelin.com/contracts)
+- **Wallet**: [Privy](https://privy.io/) - Embedded wallet authentication
 - **Web3**: [Ethers.js v6](https://docs.ethers.org/)
-- **Wallet**: [Privy](https://privy.io/) - Multi-chain wallet authentication
-- **Storage**: [Lighthouse IPFS](https://lighthouse.storage/)
+
+### Blockchain & Infrastructure
+- **Smart Contracts**: [Solidity 0.8.27](https://soliditylang.org/)
+- **Development**: [Hardhat](https://hardhat.org/)
+- **Libraries**: [OpenZeppelin v5](https://www.openzeppelin.com/contracts)
+- **Network**: Sepolia Testnet (Chain ID: 11155111)
+- **Explorer**: [Blockscout Autoscout](https://deploy.blockscout.com/) - Custom deployment
+- **Oracle**: [Pyth Network](https://pyth.network/) - ETH/USD price feeds
+- **Storage**: [Lighthouse IPFS](https://lighthouse.storage/) - Decentralized file storage
+
+### Prize Integration
+- **PYUSD**: `0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9` (Sepolia testnet token)
+- **Pyth Oracle**: `0xDd24F84d36BF92C65F92307595335bdFab5Bbd21` (Sepolia deployment)
+- **Blockscout**: Custom instance at bugdex-explorer.cloud.blockscout.com
 
 ## 🚀 Quick Start
 
@@ -172,23 +264,56 @@ EthGlobal/
 └── README.md
 ```
 
-## 🔗 Smart Contracts
+## 🔗 Smart Contracts (Sepolia Testnet)
 
-### BugToken (ERC-20)
-- **Faucet**: Users claim 100 BUG tokens daily
-- **Staking**: Required for voting (10 BUG per vote)
-- **Max Supply**: 100,000,000 BUG
+### BugTokenV3 - ERC-20 with Pyth Oracle Integration 🏆
+**Address**: `0x496d97744e6F313b62B3cfB6b76f303598c1a883`
 
-### BugNFT (ERC-721)
-- **Metadata**: IPFS-based with image hash, rarity, discoverer
-- **Rarity System**: 5 levels (Common → Legendary)
-- **Verification**: Community-driven validation
+The native token for BugDex with dynamic pricing for faucet unlocks.
 
-### BugVoting
-- **Submission**: Users submit bugs with IPFS metadata
-- **Voting Period**: 3 days from submission
-- **Auto-Resolution**: Mints NFT at 5 votes
-- **Rewards**: 50% to discoverer, 50% split among voters
+**Key Features**:
+- 🔮 **Pyth Oracle Integration** - Fetches real-time ETH/USD price to calculate unlock cost
+- 💵 **PYUSD Payment Option** - Pay 1 PYUSD (stablecoin) as alternative to ETH
+- 🪙 **Faucet System** - Unlock once ($1), claim 100 BUG every 24 hours
+- ⏱️ **Cooldown Tracking** - On-chain timestamp verification for claims
+- 🎁 **Initial Mint** - 100 BUG given immediately on unlock
+
+**Prize Integrations**: PYUSD Consumer Payments + Pyth Price Oracle
+
+### BugNFT v2 - ERC-721 with Rarity Tiers
+**Address**: `0xfDe4C483EbF1d187aB75C0AfCDa1342f273bE7DF`
+
+NFT contract for approved bug submissions with vote-based rarity.
+
+**Rarity Calculation**:
+- **Common** (0-1 votes) - 60% of submissions
+- **Uncommon** (2-4 votes) - 25%
+- **Rare** (5-9 votes) - 10%
+- **Epic** (10-19 votes) - 4%
+- **Legendary** (20+ votes) - 1%
+
+**Features**:
+- ✅ **Public Minting** - Anyone can mint approved submissions (no authorization required)
+- 📊 **On-Chain Metadata** - IPFS URIs stored permanently
+- 🎨 **Rarity Frames** - Visual distinction in collection view
+
+### BugSubmissionStaking - Voting & Rewards
+**Address**: `0xaD8AbE2726D86b0f3C7160BB377580207876Ab37`
+
+Handles staking for submissions and reward distribution to voters.
+
+**Mechanics**:
+- **Stake**: 10 BUG required to submit bug for voting
+- **Voting Period**: Off-chain signatures (free, no gas)
+- **Approval Threshold**: 2+ net votes to mint NFT
+- **Rewards**: 5 BUG per upvote to voters (from contract balance)
+- **Funded**: 1000 BUG for initial reward distribution
+
+### Supporting Contracts
+- **BugVotingV2**: `0xDD05459B4EAED043Ef5D12f45974D0f7468c28e9` - Off-chain vote verification
+- **UserProfileRegistry**: `0xEa53a1898E8ad17e672b28BbB724CD7Ca56F1e60` - User profile storage
+- **PYUSD (Sepolia)**: `0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9` - PayPal stablecoin
+- **Pyth Oracle**: `0xDd24F84d36BF92C65F92307595335bdFab5Bbd21` - Price feed provider
 
 ## 🎨 Key Features
 
@@ -283,14 +408,11 @@ Current test coverage:
 - [ ] Leaderboards and achievements
 - [ ] Multi-chain support
 
-## 🤝 Contributing
+## 🤝 Contributing & Team
 
-We're building this for **ETHGlobal 2025**! If you're on the team:
+Built by a solo developer for **ETHOnline 2025** with AI assistance (Claude, GitHub Copilot).
 
-1. Check the current branch strategy in `GIT_WORKFLOW.md`
-2. Create a feature branch from `backend/contracts` or `frontend/ui`
-3. Make your changes and test locally
-4. Submit a PR with clear description
+**AI Usage Disclosure**: See [AI_USAGE_DISCLOSURE.md](AI_USAGE_DISCLOSURE.md) for detailed attribution of human vs AI contributions. All architecture, design, and prize integration strategy is 100% human-led.
 
 ## 📝 License
 
@@ -298,11 +420,15 @@ MIT License - see LICENSE file for details
 
 ## 🔗 Links
 
+- **Live App**: [bugdex.life](https://bugdex.life)
+- **Explorer**: [bugdex-explorer.cloud.blockscout.com](https://bugdex-explorer.cloud.blockscout.com)
 - **GitHub**: [FleetFox1/EthGlobal](https://github.com/FleetFox1/EthGlobal)
-- **Lighthouse**: [lighthouse.storage](https://lighthouse.storage/)
-- **ETHGlobal**: [ethglobal.com](https://ethglobal.com/)
+- **ETHOnline 2025**: [ethglobal.com/events/ethonline2025](https://ethglobal.com/events/ethonline2025)
+- **Deployment**: Vercel (Frontend) + Sepolia (Contracts)
 
 ---
 
-Built with ❤️ for **ETHGlobal 2025** 🐛
+**Built with ❤️ for ETHOnline 2025**
+
+Integrating: **PYUSD** 💵 | **Blockscout** 🔍 | **Pyth Network** �
 

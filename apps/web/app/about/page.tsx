@@ -30,18 +30,72 @@ export default function AboutPage() {
           <div className="text-6xl mb-4">🐞</div>
           <h2 className="text-3xl font-bold mb-3">BugDex</h2>
           <p className="text-lg text-muted-foreground">
-            Discover, collect, and trade bug NFTs on the blockchain
+            Crowdsourcing biodiversity data through Web3 incentives
           </p>
         </div>
+
+        {/* The Problem */}
+        <section className="mb-8 bg-red-500/5 border border-red-500/20 rounded-lg p-6">
+          <h3 className="text-xl font-semibold mb-3 text-red-400">🚨 The Problem</h3>
+          <p className="text-muted-foreground mb-3">
+            We're in the midst of an <strong>insect apocalypse</strong>. Over 40% of insect species are declining globally, 
+            with catastrophic consequences for ecosystems and food security. Yet biodiversity monitoring remains expensive, 
+            slow, and limited to professional researchers.
+          </p>
+          <p className="text-muted-foreground">
+            Critical biodiversity data sits unused in nature while conservation organizations struggle with funding 
+            and lack of real-time field data from diverse geographic locations.
+          </p>
+        </section>
+
+        {/* Our Solution */}
+        <section className="mb-8">
+          <h3 className="text-xl font-semibold mb-3">💡 Our Solution: DeSci Meets Conservation</h3>
+          <p className="text-muted-foreground mb-4">
+            BugDex turns citizen science into a rewarding experience. By gamifying insect photography with Web3 incentives, 
+            we create a global network of biodiversity data collectors. Every photo becomes both a collectible NFT and 
+            valuable scientific data - geo-tagged, timestamped, and community-verified.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-4">
+              <div className="text-2xl mb-2">🔬</div>
+              <h4 className="font-semibold mb-1">DeSci Data Collection</h4>
+              <p className="text-xs text-muted-foreground">
+                Crowdsourced biodiversity observations with on-chain provenance and IPFS storage
+              </p>
+            </div>
+            <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-4">
+              <div className="text-2xl mb-2">💰</div>
+              <h4 className="font-semibold mb-1">Economic Incentives</h4>
+              <p className="text-xs text-muted-foreground">
+                Token rewards for contributions, making conservation data collection financially sustainable
+              </p>
+            </div>
+            <div className="bg-purple-500/5 border border-purple-500/20 rounded-lg p-4">
+              <div className="text-2xl mb-2">🌍</div>
+              <h4 className="font-semibold mb-1">Direct Impact</h4>
+              <p className="text-xs text-muted-foreground">
+                PYUSD donations flow directly to conservation orgs, governed by community voting
+              </p>
+            </div>
+            <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-4">
+              <div className="text-2xl mb-2">🎮</div>
+              <h4 className="font-semibold mb-1">Engaging UX</h4>
+              <p className="text-xs text-muted-foreground">
+                NFT collecting mechanics make biodiversity monitoring fun and accessible to everyone
+              </p>
+            </div>
+          </div>
+        </section>
 
         {/* What is BugDex */}
         <section className="mb-8">
           <h3 className="text-xl font-semibold mb-3">What is BugDex?</h3>
           <p className="text-muted-foreground mb-4">
-            BugDex is a mobile-first Web3 app where users can scan real-world bugs using their phone camera, 
-            mint them as collectible NFTs, and trade them with other collectors. Our community-driven voting 
-            system ensures authenticity and rewards active participants. A portion of platform fees supports 
-            bug conservation efforts worldwide.
+            BugDex is a mobile-first DeSci (Decentralized Science) application that rewards people for documenting 
+            insect biodiversity. Users photograph bugs they encounter, stake tokens to submit for community verification, 
+            and mint verified observations as NFTs with rarity based on vote counts. The platform combines PYUSD payments, 
+            Pyth oracle pricing, and Blockscout transparency to create a seamless Web3 experience for conservation impact.
           </p>
         </section>
 
@@ -51,48 +105,60 @@ export default function AboutPage() {
           <div className="space-y-4">
             <div className="flex gap-4">
               <div className="flex-shrink-0 h-12 w-12 rounded-full bg-green-500/20 flex items-center justify-center text-2xl">
-                📸
+                �
               </div>
               <div>
-                <h4 className="font-semibold mb-1">1. Scan a Bug</h4>
+                <h4 className="font-semibold mb-1">1. Unlock Access</h4>
                 <p className="text-sm text-muted-foreground">
-                  Use your phone camera to capture photos of bugs you find in nature.
+                  Pay $1 (PYUSD or ETH via Pyth oracle) to unlock unlimited daily BUG token claims. Stablecoin option ensures predictable pricing.
                 </p>
               </div>
             </div>
 
             <div className="flex gap-4">
               <div className="flex-shrink-0 h-12 w-12 rounded-full bg-blue-500/20 flex items-center justify-center text-2xl">
-                🗳️
+                📸
               </div>
               <div>
-                <h4 className="font-semibold mb-1">2. Community Voting</h4>
+                <h4 className="font-semibold mb-1">2. Photograph Insects</h4>
                 <p className="text-sm text-muted-foreground">
-                  Submit your bug for community verification. Other users vote on authenticity.
+                  Capture bugs you find in nature with geo-tagged, timestamped photos stored on IPFS for permanent decentralized storage.
                 </p>
               </div>
             </div>
 
             <div className="flex gap-4">
               <div className="flex-shrink-0 h-12 w-12 rounded-full bg-purple-500/20 flex items-center justify-center text-2xl">
-                ✨
+                🗳️
               </div>
               <div>
-                <h4 className="font-semibold mb-1">3. Mint Your NFT</h4>
+                <h4 className="font-semibold mb-1">3. Community Verification</h4>
                 <p className="text-sm text-muted-foreground">
-                  Once approved, your bug is minted as an NFT and you receive BUG tokens as a reward.
+                  Stake 10 BUG tokens to submit for voting. Community votes FOR/AGAINST with free off-chain signatures (no gas fees).
                 </p>
               </div>
             </div>
 
             <div className="flex gap-4">
               <div className="flex-shrink-0 h-12 w-12 rounded-full bg-amber-500/20 flex items-center justify-center text-2xl">
-                🔄
+                ✨
               </div>
               <div>
-                <h4 className="font-semibold mb-1">4. Trade & Collect</h4>
+                <h4 className="font-semibold mb-1">4. Mint & Earn</h4>
                 <p className="text-sm text-muted-foreground">
-                  Build your collection, trade with others, and complete your BugDex!
+                  Approved bugs (2+ net votes) mint as NFTs with rarity tiers. Voters earn 5 BUG per upvote, incentivizing quality verification.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 h-12 w-12 rounded-full bg-red-500/20 flex items-center justify-center text-2xl">
+                🌍
+              </div>
+              <div>
+                <h4 className="font-semibold mb-1">5. Support Conservation</h4>
+                <p className="text-sm text-muted-foreground">
+                  Donate PYUSD directly to wildlife conservation organizations. Vote with BUG tokens to influence quarterly fund distribution.
                 </p>
               </div>
             </div>
@@ -197,6 +263,23 @@ export default function AboutPage() {
                 </ul>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Future Roadmap CTA */}
+        <section className="mb-8">
+          <div className="bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-lg p-6 text-center">
+            <div className="text-4xl mb-3">🚀</div>
+            <h3 className="text-xl font-semibold mb-2">Curious About What's Next?</h3>
+            <p className="text-sm text-muted-foreground mb-4 max-w-xl mx-auto">
+              From trading card games to AR features, see how we're building BugDex into 
+              a global biodiversity monitoring network.
+            </p>
+            <Link href="/roadmap">
+              <Button className="bg-purple-500 hover:bg-purple-600">
+                View Future Roadmap
+              </Button>
+            </Link>
           </div>
         </section>
 

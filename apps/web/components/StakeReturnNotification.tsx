@@ -19,10 +19,18 @@ export function StakeReturnNotification() {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!isConnected || !address) return;
+    if (!isConnected || !address) {
+      setCompletedStakes([]); // Clear stakes when disconnected
+      return;
+    }
+
+    let isMounted = true; // Prevent state updates after unmount
+    let intervalId: NodeJS.Timeout;
 
     const checkCompletedStakes = async () => {
       try {
+        // Skip if component unmounted
+        if (!isMounted) return;
         const response = await fetch(`/api/uploads?address=${address}`);
         const data = await response.json();
 
@@ -59,7 +67,9 @@ export function StakeReturnNotification() {
           }
         }
 
-        setCompletedStakes(completed);
+        if (isMounted) {
+          setCompletedStakes(completed);
+        }
       } catch (error) {
         console.error('Error checking completed stakes:', error);
       }
@@ -68,10 +78,19 @@ export function StakeReturnNotification() {
     // Check on mount
     checkCompletedStakes();
 
-    // Check every 30 seconds
-    const interval = setInterval(checkCompletedStakes, 30000);
+    // Check every 30 seconds (only if still mounted)
+    intervalId = setInterval(() => {
+      if (isMounted) {
+        checkCompletedStakes();
+      }
+    }, 30000);
 
-    return () => clearInterval(interval);
+    return () => {
+      isMounted = false;
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
   }, [address, isConnected]);
 
   const visibleStakes = completedStakes.filter(

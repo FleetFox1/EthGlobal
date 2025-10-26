@@ -86,6 +86,17 @@ export function FaucetButton() {
         setCanClaim(false);
       }
       
+      // Cache the results for 5 minutes
+      const cacheKey = `unlock_status_${walletAddress}`;
+      const cacheData = {
+        hasUnlocked: dbUnlocked,
+        canClaim: canClaim,
+        timeUntilNextClaim: timeUntilNextClaim,
+        timestamp: Date.now()
+      };
+      sessionStorage.setItem(cacheKey, JSON.stringify(cacheData));
+      console.log('💾 Cached unlock status for 5 minutes');
+      
     } catch (error) {
       console.error("Failed to check unlock status:", error);
       setHasUnlocked(false); // Default to locked on error
@@ -95,6 +106,24 @@ export function FaucetButton() {
   };
 
   useEffect(() => {
+    // Add cache to prevent excessive RPC calls
+    const cacheKey = `unlock_status_${walletAddress}`;
+    const cached = sessionStorage.getItem(cacheKey);
+    
+    if (cached) {
+      const { hasUnlocked, canClaim, timeUntilNextClaim, timestamp } = JSON.parse(cached);
+      const age = Date.now() - timestamp;
+      
+      // Use cache if less than 5 minutes old
+      if (age < 5 * 60 * 1000) {
+        console.log('✅ Using cached unlock status (age:', Math.round(age / 1000), 'seconds)');
+        setHasUnlocked(hasUnlocked);
+        setCanClaim(canClaim);
+        setTimeUntilNextClaim(timeUntilNextClaim);
+        return;
+      }
+    }
+    
     checkUnlockStatus();
   }, [walletAddress, isAuthenticated]);
 

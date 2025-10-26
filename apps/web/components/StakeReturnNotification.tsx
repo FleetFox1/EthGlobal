@@ -28,9 +28,12 @@ export function StakeReturnNotification() {
 
         if (!data.success || !data.data) return;
 
+        // API returns { data: { uploads: [], count: N } }
+        const uploads = Array.isArray(data.data.uploads) ? data.data.uploads : [];
+        
         const completed: CompletedStake[] = [];
 
-        for (const upload of data.data) {
+        for (const upload of uploads) {
           // Check if voting ended and user hasn't been notified
           if (
             upload.votingStatus === 'approved' || 

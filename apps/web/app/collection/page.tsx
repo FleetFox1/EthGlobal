@@ -534,8 +534,12 @@ export default function CollectionPage() {
       const approveUrl = getTransactionUrl(approveReceipt.hash);
       
       // Copy to clipboard and show confirm dialog
-      if (navigator.clipboard) {
-        await navigator.clipboard.writeText(approveUrl);
+      try {
+        if (navigator.clipboard && document.hasFocus()) {
+          await navigator.clipboard.writeText(approveUrl);
+        }
+      } catch (e) {
+        // Clipboard failed, continue anyway
       }
       
       const shouldOpenApprove = confirm(
@@ -563,8 +567,12 @@ export default function CollectionPage() {
       const stakeUrl = getTransactionUrl(stakeReceipt.hash);
       
       // Copy to clipboard and show confirm dialog
-      if (navigator.clipboard) {
-        await navigator.clipboard.writeText(stakeUrl);
+      try {
+        if (navigator.clipboard && document.hasFocus()) {
+          await navigator.clipboard.writeText(stakeUrl);
+        }
+      } catch (e) {
+        // Clipboard failed, continue anyway
       }
       
       const shouldOpenStake = confirm(
@@ -620,7 +628,14 @@ export default function CollectionPage() {
     } catch (error) {
       const err = error as Error;
       console.error('Failed to submit for voting:', err);
-      alert(`Failed to submit for voting: ${err.message}`);
+      
+      // Check if error is "already staked" - this means the stake actually succeeded
+      if (err.message.includes('Already staked')) {
+        alert(`Bug already submitted for voting! ✅\n\nYour 10 BUG stake was successful.\n\nRefreshing your collection...`);
+        await loadUploads();
+      } else {
+        alert(`Failed to submit for voting: ${err.message}`);
+      }
     } finally {
       setSubmitting(null);
     }

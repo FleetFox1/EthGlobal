@@ -39,7 +39,9 @@ export function FaucetButton() {
       if (dbUnlocked && window.ethereum) {
         try {
           const provider = new ethers.BrowserProvider(window.ethereum);
-          const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS; // Always use current version
+          const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS;
+          
+          console.log('🔍 Using BUG token address:', bugTokenAddress);
           
           if (bugTokenAddress) {
             const bugTokenABI = [
@@ -54,14 +56,15 @@ export function FaucetButton() {
             const canClaimNow = await bugToken.canClaimFaucet(walletAddress);
             const timeRemaining = await bugToken.timeUntilNextClaim(walletAddress);
             
-            console.log('⏰ Can claim:', canClaimNow, 'Time until next:', Number(timeRemaining));
+            console.log('⏰ Can claim:', canClaimNow, 'Time until next:', Number(timeRemaining), 'seconds');
             setCanClaim(canClaimNow);
             setTimeUntilNextClaim(Number(timeRemaining));
+          } else {
+            console.error('❌ No BUG token address configured!');
           }
         } catch (contractError) {
-          console.warn('⚠️ Contract cooldown check failed:', contractError);
-          // If contract fails, default to allowing claim attempt
-          setCanClaim(true);
+          console.error('⚠️ Contract cooldown check failed:', contractError);
+          // Keep current state - don't change canClaim
         }
       }
       

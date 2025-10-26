@@ -1,6 +1,7 @@
 /**
- * RPC Provider with automatic fallback
+ * RPC Provider with automatic fallback and rate limiting
  * Falls back to public Sepolia RPC if Alchemy is rate limited
+ * Implements client-side rate limiter to prevent RPC spam
  */
 
 import { ethers } from "ethers";
@@ -15,11 +16,67 @@ const FALLBACK_RPCS = [
   "https://ethereum-sepolia.publicnode.com",
 ];
 
+// Rate limiter state (in-memory)
+interface RateLimiterState {
+  calls: number[];
+  blocked: boolean;
+  blockedUntil: number;
+}
+
+const rateLimiter: RateLimiterState = {
+  calls: [],
+  blocked: false,
+  blockedUntil: 0,
+};
+
+// Rate limit config
+const MAX_CALLS_PER_MINUTE = 30; // Max 30 RPC calls per minute per user
+const BLOCK_DURATION = 60000; // Block for 1 minute if rate limit exceeded
+
+/**
+ * Check if rate limit is exceeded
+ * Returns true if too many calls in last minute
+ */
+function isRateLimited(): boolean {
+  const now = Date.now();
+  
+  // Check if currently blocked
+  if (rateLimiter.blocked && now < rateLimiter.blockedUntil) {
+    console.warn(`🚫 Rate limited. Unblocking in ${Math.ceil((rateLimiter.blockedUntil - now) / 1000)}s`);
+    return true;
+  } else if (rateLimiter.blocked && now >= rateLimiter.blockedUntil) {
+    // Unblock
+    rateLimiter.blocked = false;
+    rateLimiter.calls = [];
+    console.log("✅ Rate limit unblocked");
+  }
+  
+  // Remove calls older than 1 minute
+  rateLimiter.calls = rateLimiter.calls.filter(timestamp => now - timestamp < 60000);
+  
+  // Check if exceeded limit
+  if (rateLimiter.calls.length >= MAX_CALLS_PER_MINUTE) {
+    console.error(`🚫 Rate limit exceeded! ${rateLimiter.calls.length} calls in last minute. Blocking for ${BLOCK_DURATION / 1000}s`);
+    rateLimiter.blocked = true;
+    rateLimiter.blockedUntil = now + BLOCK_DURATION;
+    return true;
+  }
+  
+  // Record this call
+  rateLimiter.calls.push(now);
+  return false;
+}
+
 /**
  * Get a provider with automatic fallback
  * Tries Alchemy first, then falls back to public RPCs
  */
 export async function getRobustProvider(): Promise<ethers.JsonRpcProvider> {
+  // Check rate limit
+  if (isRateLimited()) {
+    throw new Error("Rate limit exceeded. Please wait before making more requests.");
+  }
+  
   // Try Alchemy first
   try {
     const provider = new ethers.JsonRpcProvider(ALCHEMY_RPC);

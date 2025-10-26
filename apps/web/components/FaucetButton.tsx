@@ -7,6 +7,7 @@ import { Loader2, Coins, CheckCircle, XCircle, Lock } from "lucide-react";
 import { ethers } from "ethers";
 import { UnlockFaucetModal } from "./UnlockFaucetModal";
 import { getRobustProvider, getBrowserProvider } from "@/lib/rpc-providers";
+import { deduplicateRequest, generateRequestKey } from "@/lib/request-deduplicator";
 
 export function FaucetButton() {
   const { walletAddress, isAuthenticated } = useUser();
@@ -55,7 +56,11 @@ export function FaucetButton() {
             const bugToken = new ethers.Contract(bugTokenAddress, bugTokenABI, provider);
             
             // CRITICAL: Verify contract also knows user is unlocked
-            const contractUnlocked = await bugToken.hasUnlocked(walletAddress);
+            // Wrap in deduplicator to prevent duplicate calls
+            const contractUnlocked = await deduplicateRequest(
+              generateRequestKey(bugTokenAddress, 'hasUnlocked', [walletAddress]),
+              () => bugToken.hasUnlocked(walletAddress)
+            );
             console.log('🔐 Contract unlock status:', contractUnlocked);
             
             if (!contractUnlocked) {
@@ -66,8 +71,14 @@ export function FaucetButton() {
             }
             
             // Check if can claim now
-            const canClaimNow = await bugToken.canClaimFaucet(walletAddress);
-            const timeRemaining = await bugToken.timeUntilNextClaim(walletAddress);
+            const canClaimNow = await deduplicateRequest(
+              generateRequestKey(bugTokenAddress, 'canClaimFaucet', [walletAddress]),
+              () => bugToken.canClaimFaucet(walletAddress)
+            );
+            const timeRemaining = await deduplicateRequest(
+              generateRequestKey(bugTokenAddress, 'timeUntilNextClaim', [walletAddress]),
+              () => bugToken.timeUntilNextClaim(walletAddress)
+            );
             
             console.log('⏰ Can claim:', canClaimNow, 'Time until next:', Number(timeRemaining), 'seconds');
             setCanClaim(canClaimNow);

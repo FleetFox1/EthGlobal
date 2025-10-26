@@ -20,7 +20,6 @@ export const rarityTiers: RarityTier[] = [
     maxScore: null,
     emoji: "✨",
     cssClass: "legendary-frame",
-    overlayUrl: "/frames/legendary.png",
     description: "Orange/Red holographic with animated shimmer"
   },
   {
@@ -29,7 +28,6 @@ export const rarityTiers: RarityTier[] = [
     maxScore: 9,
     emoji: "💎",
     cssClass: "epic-frame",
-    overlayUrl: "/frames/epic.png",
     description: "Purple/Pink gradient with pulsing glow"
   },
   {
@@ -38,7 +36,6 @@ export const rarityTiers: RarityTier[] = [
     maxScore: 6,
     emoji: "💠",
     cssClass: "rare-frame",
-    overlayUrl: "/frames/rare.png",
     description: "Blue/Cyan shimmer with light refraction"
   },
   {
@@ -47,7 +44,6 @@ export const rarityTiers: RarityTier[] = [
     maxScore: 3,
     emoji: "🟢",
     cssClass: "uncommon-frame",
-    overlayUrl: "/frames/uncommon.png",
     description: "Green/Emerald with subtle glow"
   },
   {
@@ -56,7 +52,6 @@ export const rarityTiers: RarityTier[] = [
     maxScore: 0,
     emoji: "⚪",
     cssClass: "common-frame",
-    overlayUrl: "/frames/common.png",
     description: "Gray standard with minimal effects"
   }
 ];

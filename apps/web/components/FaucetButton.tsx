@@ -25,11 +25,21 @@ export function FaucetButton() {
     }
 
     try {
-      // Try contract call first (on-chain source of truth)
-      if (window.ethereum) {
+      // STEP 1: Check database first (source of truth for unlock status)
+      console.log('📡 Checking database unlock status...');
+      const dbRes = await fetch(`/api/faucet/check-unlock?wallet=${walletAddress}`);
+      const dbData = await dbRes.json();
+      
+      const dbUnlocked = dbData.success && dbData.hasUnlocked;
+      console.log('💾 Database unlock status:', dbUnlocked);
+      
+      setHasUnlocked(dbUnlocked);
+      
+      // STEP 2: If unlocked, check cooldown from contract
+      if (dbUnlocked && window.ethereum) {
         try {
           const provider = new ethers.BrowserProvider(window.ethereum);
-          const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_V2_ADDRESS || process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS;
+          const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS; // Always use current version
           
           if (bugTokenAddress) {
             const bugTokenABI = [
@@ -39,39 +49,20 @@ export function FaucetButton() {
             ];
 
             const bugToken = new ethers.Contract(bugTokenAddress, bugTokenABI, provider);
-            const unlocked = await bugToken.hasUnlocked(walletAddress);
             
-            console.log('✅ Contract unlock check:', unlocked);
-            setHasUnlocked(unlocked);
+            // Check if can claim now
+            const canClaimNow = await bugToken.canClaimFaucet(walletAddress);
+            const timeRemaining = await bugToken.timeUntilNextClaim(walletAddress);
             
-            // If unlocked, check cooldown
-            if (unlocked) {
-              const canClaimNow = await bugToken.canClaimFaucet(walletAddress);
-              const timeRemaining = await bugToken.timeUntilNextClaim(walletAddress);
-              
-              console.log('Can claim:', canClaimNow, 'Time until next:', Number(timeRemaining));
-              setCanClaim(canClaimNow);
-              setTimeUntilNextClaim(Number(timeRemaining));
-            }
-            
-            return; // Success, exit early
+            console.log('⏰ Can claim:', canClaimNow, 'Time until next:', Number(timeRemaining));
+            setCanClaim(canClaimNow);
+            setTimeUntilNextClaim(Number(timeRemaining));
           }
         } catch (contractError) {
-          console.warn('⚠️ Contract call failed, checking database:', contractError);
+          console.warn('⚠️ Contract cooldown check failed:', contractError);
+          // If contract fails, default to allowing claim attempt
+          setCanClaim(true);
         }
-      }
-
-      // Fallback: Check database (for mobile compatibility)
-      console.log('📡 Checking database unlock status...');
-      const dbRes = await fetch(`/api/faucet/check-unlock?wallet=${walletAddress}`);
-      const dbData = await dbRes.json();
-      
-      if (dbData.success && dbData.hasUnlocked) {
-        console.log('✅ Database shows unlocked');
-        setHasUnlocked(true);
-      } else {
-        console.log('❌ Not unlocked (database check)');
-        setHasUnlocked(false);
       }
       
     } catch (error) {

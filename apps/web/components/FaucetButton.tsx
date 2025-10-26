@@ -52,6 +52,17 @@ export function FaucetButton() {
 
             const bugToken = new ethers.Contract(bugTokenAddress, bugTokenABI, provider);
             
+            // CRITICAL: Verify contract also knows user is unlocked
+            const contractUnlocked = await bugToken.hasUnlocked(walletAddress);
+            console.log('🔐 Contract unlock status:', contractUnlocked);
+            
+            if (!contractUnlocked) {
+              // Database says unlocked but contract doesn't - new deployment!
+              console.warn('⚠️ Unlock mismatch: DB says yes, contract says no');
+              setHasUnlocked(false); // Override database - contract is source of truth
+              return;
+            }
+            
             // Check if can claim now
             const canClaimNow = await bugToken.canClaimFaucet(walletAddress);
             const timeRemaining = await bugToken.timeUntilNextClaim(walletAddress);

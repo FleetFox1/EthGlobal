@@ -253,44 +253,167 @@ export default function AdminPage() {
 
         {/* Submission Breakdown */}
         {dbStats && (
-          <Card className="p-6 mb-8">
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <Database className="h-5 w-5" />
-              Submission Pipeline (Off-Chain Voting)
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <div className="text-center p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                <div className="text-3xl font-bold text-gray-600">{dbStats.submissions?.total || 0}</div>
-                <div className="text-sm text-muted-foreground mt-1">Total Submitted</div>
-                <div className="text-xs text-muted-foreground mt-1">All time</div>
+          <>
+            <Card className="p-6 mb-8">
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <Database className="h-5 w-5" />
+                Submission Pipeline (Off-Chain Voting)
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div className="text-center p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                  <div className="text-3xl font-bold text-gray-600">{dbStats.submissions?.total || 0}</div>
+                  <div className="text-sm text-muted-foreground mt-1">Total Submitted</div>
+                  <div className="text-xs text-muted-foreground mt-1">All time</div>
+                </div>
+                <div className="text-center p-4 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <div className="text-3xl font-bold text-blue-600">{dbStats.submissions?.pendingVoting || 0}</div>
+                  <div className="text-sm text-muted-foreground mt-1">Pending Voting</div>
+                  <div className="text-xs text-muted-foreground mt-1">Active now</div>
+                </div>
+                <div className="text-center p-4 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                  <div className="text-3xl font-bold text-green-600">{dbStats.submissions?.approved || 0}</div>
+                  <div className="text-sm text-muted-foreground mt-1">Approved</div>
+                  <div className="text-xs text-muted-foreground mt-1">Can mint NFT</div>
+                </div>
+                <div className="text-center p-4 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                  <div className="text-3xl font-bold text-red-600">{dbStats.submissions?.rejected || 0}</div>
+                  <div className="text-sm text-muted-foreground mt-1">Rejected</div>
+                  <div className="text-xs text-muted-foreground mt-1">Failed vote</div>
+                </div>
+                <div className="text-center p-4 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                  <div className="text-3xl font-bold text-purple-600">{dbStats.submissions?.minted || 0}</div>
+                  <div className="text-sm text-muted-foreground mt-1">Minted</div>
+                  <div className="text-xs text-muted-foreground mt-1">On blockchain</div>
+                </div>
               </div>
-              <div className="text-center p-4 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <div className="text-3xl font-bold text-blue-600">{dbStats.submissions?.pendingVoting || 0}</div>
-                <div className="text-sm text-muted-foreground mt-1">Pending Voting</div>
-                <div className="text-xs text-muted-foreground mt-1">Active now</div>
+              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/50 rounded-lg border border-blue-200 dark:border-blue-800">
+                <p className="text-sm text-blue-900 dark:text-blue-100">
+                  <strong>ℹ️ Off-Chain Voting System:</strong> Community votes are FREE and stored in the database. After 3 days, if votes_for &gt; votes_against, the bug is approved. Users then pay gas to mint approved bugs as NFTs with rarity based on vote score!
+                </p>
               </div>
-              <div className="text-center p-4 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                <div className="text-3xl font-bold text-green-600">{dbStats.submissions?.approved || 0}</div>
-                <div className="text-sm text-muted-foreground mt-1">Approved</div>
-                <div className="text-xs text-muted-foreground mt-1">Can mint NFT</div>
-              </div>
-              <div className="text-center p-4 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                <div className="text-3xl font-bold text-red-600">{dbStats.submissions?.rejected || 0}</div>
-                <div className="text-sm text-muted-foreground mt-1">Rejected</div>
-                <div className="text-xs text-muted-foreground mt-1">Failed vote</div>
-              </div>
-              <div className="text-center p-4 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                <div className="text-3xl font-bold text-purple-600">{dbStats.submissions?.minted || 0}</div>
-                <div className="text-sm text-muted-foreground mt-1">Minted</div>
-                <div className="text-xs text-muted-foreground mt-1">On blockchain</div>
-              </div>
+            </Card>
+
+            {/* Faucet & Engagement Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                  <Coins className="h-5 w-5 text-yellow-500" />
+                  Faucet Performance
+                </h2>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Total Unlocks</span>
+                    <span className="text-xl font-bold">{dbStats.faucet?.totalUnlocks || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Unique Users</span>
+                    <span className="text-xl font-bold">{dbStats.faucet?.uniqueUsers || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Total Revenue (ETH/PYUSD)</span>
+                    <span className="text-xl font-bold">${(dbStats.faucet?.totalRevenue || 0).toFixed(2)}</span>
+                  </div>
+                  <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-950/50 rounded border border-yellow-200 dark:border-yellow-800">
+                    <p className="text-xs text-yellow-900 dark:text-yellow-100">
+                      <strong>Conversion:</strong> {dbStats.faucet?.uniqueUsers && dbStats.users 
+                        ? Math.round((dbStats.faucet.uniqueUsers / dbStats.users) * 100)
+                        : 0}% of users unlocked the faucet
+                    </p>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                  <Users className="h-5 w-5 text-orange-500" />
+                  Community Engagement
+                </h2>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Active Voters</span>
+                    <span className="text-xl font-bold">{dbStats.participation?.uniqueVoters || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Voting Participation</span>
+                    <span className="text-xl font-bold">{dbStats.participation?.voterPercentage || 0}%</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Total Votes Cast</span>
+                    <span className="text-xl font-bold">{dbStats.votes?.total || 0}</span>
+                  </div>
+                  <div className="mt-4 p-3 bg-orange-50 dark:bg-orange-950/50 rounded border border-orange-200 dark:border-orange-800">
+                    <p className="text-xs text-orange-900 dark:text-orange-100">
+                      <strong>Goal:</strong> Reach 30%+ voting participation
+                    </p>
+                  </div>
+                </div>
+              </Card>
             </div>
-            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/50 rounded-lg border border-blue-200 dark:border-blue-800">
-              <p className="text-sm text-blue-900 dark:text-blue-100">
-                <strong>ℹ️ Off-Chain Voting System:</strong> Community votes are FREE and stored in the database. After 3 days, if votes_for &gt; votes_against, the bug is approved. Users then pay gas to mint approved bugs as NFTs with rarity based on vote score!
-              </p>
-            </div>
-          </Card>
+
+            {/* User Growth Chart */}
+            {dbStats.growth && dbStats.growth.length > 0 && (
+              <Card className="p-6 mb-8">
+                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-green-500" />
+                  User Growth (Last 7 Days)
+                </h2>
+                <div className="flex items-end gap-2 h-40">
+                  {dbStats.growth.map((day: any, index: number) => {
+                    const maxSignups = Math.max(...dbStats.growth.map((d: any) => d.signups));
+                    const height = maxSignups > 0 ? (day.signups / maxSignups) * 100 : 0;
+                    return (
+                      <div key={index} className="flex-1 flex flex-col items-center gap-1">
+                        <div className="text-xs font-bold text-green-600">{day.signups}</div>
+                        <div 
+                          className="w-full bg-green-500 rounded-t transition-all"
+                          style={{ height: `${height}%`, minHeight: day.signups > 0 ? '4px' : '0px' }}
+                        />
+                        <div className="text-xs text-muted-foreground whitespace-nowrap">
+                          {new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
+            )}
+
+            {/* Recent Activity */}
+            <Card className="p-6 mb-8">
+              <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
+              <div className="space-y-2">
+                {dbStats.recentActivity?.length > 0 ? (
+                  dbStats.recentActivity.map((activity: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                      <div className="flex-1">
+                        <div className="text-sm font-mono">{activity.wallet.substring(0, 10)}...{activity.wallet.substring(38)}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(activity.timestamp).toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-sm">
+                          <span className="text-green-600">👍 {activity.votesFor}</span>
+                          <span className="mx-1">|</span>
+                          <span className="text-red-600">👎 {activity.votesAgainst}</span>
+                        </div>
+                        <div className={`px-2 py-1 rounded text-xs font-medium ${
+                          activity.status === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200' :
+                          activity.status === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200' :
+                          activity.status === 'pending_voting' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200' :
+                          'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+                        }`}>
+                          {activity.status.replace('_', ' ')}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">No recent activity</p>
+                )}
+              </div>
+            </Card>
+          </>
         )}
 
         {/* Admin Actions */}

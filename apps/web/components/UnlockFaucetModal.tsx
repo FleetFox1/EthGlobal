@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2, Sparkles, CheckCircle, Coins } from "lucide-react";
 import { ethers } from "ethers";
+import { getRobustProvider, getBrowserProvider } from "@/lib/rpc-providers";
 
 interface UnlockFaucetModalProps {
   open: boolean;
@@ -45,9 +46,8 @@ export function UnlockFaucetModal({
           return;
         }
 
-        const provider = new ethers.JsonRpcProvider(
-          process.env.NEXT_PUBLIC_RPC_URL || "https://eth-sepolia.g.alchemy.com/v2/zhDx7ikWXX8vnhobQBhMb"
-        );
+        // Use robust provider with fallback to avoid Alchemy rate limits
+        const provider = await getRobustProvider();
 
         const bugTokenABI = [
           "function getETHUnlockCost() public view returns (uint256)",

@@ -65,6 +65,32 @@ export async function GET() {
       LIMIT 10
     `;
 
+    // Get user activity stats (signups per day, last 7 days)
+    const userGrowth = await sql`
+      SELECT 
+        DATE(created_at) as date,
+        COUNT(*) as count
+      FROM users
+      WHERE created_at >= NOW() - INTERVAL '7 days'
+      GROUP BY DATE(created_at)
+      ORDER BY date DESC
+    `;
+
+    // Get faucet unlock stats
+    const faucetStats = await sql`
+      SELECT 
+        COUNT(*) as total_unlocks,
+        COUNT(DISTINCT wallet_address) as unique_users,
+        SUM(amount_paid) as total_revenue
+      FROM faucet_unlocks
+    `;
+
+    // Get voting participation (unique voters)
+    const voterStats = await sql`
+      SELECT COUNT(DISTINCT wallet_address) as unique_voters
+      FROM votes
+    `;
+
     return NextResponse.json({
       success: true,
       data: {
@@ -75,11 +101,27 @@ export async function GET() {
           pendingVoting: statusCounts['pending_voting'] || 0,
           approved: statusCounts['approved'] || 0,
           rejected: statusCounts['rejected'] || 0,
+          minted: statusCounts['minted'] || 0,
         },
         votes: {
           total: totalVotes,
           active: activeVoting,
         },
+        faucet: {
+          totalUnlocks: parseInt(faucetStats.rows[0]?.total_unlocks || '0'),
+          uniqueUsers: parseInt(faucetStats.rows[0]?.unique_users || '0'),
+          totalRevenue: parseFloat(faucetStats.rows[0]?.total_revenue || '0'),
+        },
+        participation: {
+          uniqueVoters: parseInt(voterStats.rows[0]?.unique_voters || '0'),
+          voterPercentage: userCount > 0 
+            ? Math.round((parseInt(voterStats.rows[0]?.unique_voters || '0') / userCount) * 100)
+            : 0,
+        },
+        growth: userGrowth.rows.map((row: any) => ({
+          date: row.date,
+          signups: parseInt(row.count),
+        })),
         recentActivity: recentActivity.rows.map((row: any) => ({
           id: row.id,
           wallet: row.wallet_address,

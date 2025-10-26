@@ -6,6 +6,7 @@ import { useUser } from "@/lib/useUser";
 import { Loader2, Coins, CheckCircle, XCircle, Lock } from "lucide-react";
 import { ethers } from "ethers";
 import { UnlockFaucetModal } from "./UnlockFaucetModal";
+import { getRobustProvider, getBrowserProvider } from "@/lib/rpc-providers";
 
 export function FaucetButton() {
   const { walletAddress, isAuthenticated } = useUser();
@@ -38,7 +39,8 @@ export function FaucetButton() {
       // STEP 2: If unlocked, check cooldown from contract
       if (dbUnlocked && window.ethereum) {
         try {
-          const provider = new ethers.BrowserProvider(window.ethereum);
+          // Use robust provider with fallback instead of just Alchemy
+          const provider = await getRobustProvider();
           const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS;
           
           console.log('🔍 Using BUG token address:', bugTokenAddress);

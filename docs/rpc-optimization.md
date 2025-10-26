@@ -12,7 +12,7 @@ During hackathon judging, BugDex experienced critical RPC spam:
 - **56% throttled** by Alchemy rate limits
 - **Pyth price feed broken** due to API exhaustion
 
-### Root Causes
+### Root Causes (possible)
 1. **FaucetButton**: 3 contract calls per mount with no caching
 2. **StakeReturnNotification**: Memory leaks causing duplicate intervals
 3. **Judge traffic**: Automated testing tools opening 50-100+ tabs simultaneously

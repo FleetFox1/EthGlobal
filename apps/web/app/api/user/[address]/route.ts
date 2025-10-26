@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserNFTs, getBugBalance } from "@/lib/contracts";
-import { getIPFSUrl } from "@/lib/lighthouse";
+import { getIPFSUrl } from "@/lib/pinata";
 
 /**
  * GET /api/user/[address]

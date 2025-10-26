@@ -8,7 +8,7 @@
  * 3. Or use the CameraModal component in the UI
  */
 
-import { getIPFSUrl } from '../lib/lighthouse';
+import { getIPFSUrl } from '../lib/pinata';
 
 async function testIPFSIntegration() {
   console.log('⚠️  This script is deprecated.');

@@ -10,7 +10,7 @@ export default function HelpPage() {
   const [copiedToken, setCopiedToken] = useState(false);
   const [copiedNFT, setCopiedNFT] = useState(false);
 
-  const BUG_TOKEN_ADDRESS = process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS || "0x5f7421B1e03D644CaFD3B13b2da2557748571a67";
+  const BUG_TOKEN_ADDRESS = process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS || "0x496d97744e6F313b62B3cfB6b76f303598c1a883";
   const NFT_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_BUG_NFT_ADDRESS || "0xfDe4C483EbF1d187aB75C0AfCDa1342f273bE7DF";
 
   const copyToClipboard = (text: string, type: 'token' | 'nft') => {

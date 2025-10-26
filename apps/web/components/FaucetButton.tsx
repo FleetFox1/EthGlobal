@@ -175,8 +175,8 @@ export function FaucetButton() {
       }
       
       const signer = await provider.getSigner();
-      // Use V2 contract for claiming
-      const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_V2_ADDRESS || process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS!;
+      // Use current BUG token contract (V3) for claiming
+      const bugTokenAddress = process.env.NEXT_PUBLIC_BUG_TOKEN_ADDRESS!;
       
       const bugTokenABI = [
         "function claimFaucet() external",

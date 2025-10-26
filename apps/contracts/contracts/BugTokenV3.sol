@@ -255,4 +255,27 @@ contract BugTokenV3 is ERC20, Ownable {
             timeUntilClaim = nextClaimTime - block.timestamp;
         }
     }
+    
+    /**
+     * @dev Check if address can claim from faucet (V2 compatibility)
+     */
+    function canClaimFaucet(address user) external view returns (bool) {
+        if (!hasUnlocked[user]) return false;
+        if (totalSupply() + FAUCET_AMOUNT > MAX_SUPPLY) return false;
+        if (block.timestamp < lastFaucetClaim[user] + FAUCET_COOLDOWN) return false;
+        return true;
+    }
+    
+    /**
+     * @dev Get time until next faucet claim (V2 compatibility)
+     */
+    function timeUntilNextClaim(address user) external view returns (uint256) {
+        if (!hasUnlocked[user]) return 0;
+        if (lastFaucetClaim[user] == 0) return 0;
+        
+        uint256 nextClaimTime = lastFaucetClaim[user] + FAUCET_COOLDOWN;
+        if (block.timestamp >= nextClaimTime) return 0;
+        
+        return nextClaimTime - block.timestamp;
+    }
 }

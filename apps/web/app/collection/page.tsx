@@ -532,8 +532,21 @@ export default function CollectionPage() {
       // Show approval transaction on Blockscout
       const { getTransactionUrl } = await import('@/lib/blockscout');
       const approveUrl = getTransactionUrl(approveReceipt.hash);
-      alert(`✅ Approval confirmed!\n\nOpening explorer in new tab...`);
-      window.open(approveUrl, '_blank', 'noopener,noreferrer');
+      
+      // Copy to clipboard and show confirm dialog
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(approveUrl);
+      }
+      
+      const shouldOpenApprove = confirm(
+        `✅ Approval confirmed!\n\n` +
+        `🔗 Transaction link copied to clipboard!\n\n` +
+        `Click OK to open Blockscout Explorer`
+      );
+      
+      if (shouldOpenApprove) {
+        window.open(approveUrl, '_blank', 'noopener,noreferrer');
+      }
 
       // STEP 3: Stake via contract
       console.log('🔒 Staking 10 BUG...');
@@ -548,8 +561,22 @@ export default function CollectionPage() {
       // Show staking transaction on Blockscout
       const bugName = upload.bugInfo?.commonName || 'Bug submission';
       const stakeUrl = getTransactionUrl(stakeReceipt.hash);
-      alert(`🎉 Stake successful!\n\n10 BUG staked for "${bugName}"\n\nOpening explorer in new tab...`);
-      window.open(stakeUrl, '_blank', 'noopener,noreferrer');
+      
+      // Copy to clipboard and show confirm dialog
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(stakeUrl);
+      }
+      
+      const shouldOpenStake = confirm(
+        `🎉 Stake successful!\n\n` +
+        `10 BUG staked for "${bugName}"\n\n` +
+        `🔗 Transaction link copied to clipboard!\n\n` +
+        `Click OK to open Blockscout Explorer`
+      );
+      
+      if (shouldOpenStake) {
+        window.open(stakeUrl, '_blank', 'noopener,noreferrer');
+      }
 
       // STEP 4: Call backend API to update database
       console.log('📝 Updating database...');
@@ -742,10 +769,23 @@ export default function CollectionPage() {
       const { getTransactionUrl } = await import('@/lib/blockscout');
       const explorerUrl = getTransactionUrl(receipt.hash);
       
-      alert(`🎉 NFT Minted Successfully!\n\n✨ Token ID: ${tokenId}\n🎨 Rarity: ${['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'][rarityLevel]}\n📊 Based on ${upload.votesFor || 0} upvotes\n\n🔗 Opening explorer in new tab...`);
+      // Copy explorer URL to clipboard
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(explorerUrl);
+      }
       
-      // Open Blockscout in new window
-      window.open(explorerUrl, '_blank', 'noopener,noreferrer');
+      const shouldOpenExplorer = confirm(
+        `🎉 NFT Minted Successfully!\n\n` +
+        `✨ Token ID: ${tokenId}\n` +
+        `🎨 Rarity: ${['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'][rarityLevel]}\n` +
+        `📊 Based on ${upload.votesFor || 0} upvotes\n\n` +
+        `🔗 Transaction link copied to clipboard!\n\n` +
+        `Click OK to open Blockscout Explorer`
+      );
+      
+      if (shouldOpenExplorer) {
+        window.open(explorerUrl, '_blank', 'noopener,noreferrer');
+      }
 
       // Save NFT data to database
       if (tokenId !== 'Unknown') {

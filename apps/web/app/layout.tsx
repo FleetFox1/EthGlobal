@@ -5,6 +5,7 @@ import { UserProvider } from "@/lib/UserContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Header } from "@/components/Header";
 import { LandingModalWrapper } from "@/components/LandingModalWrapper";
+import { StakeReturnNotification } from "@/components/StakeReturnNotification";
 import "./globals.css";
 import "./nft-effects.css";
 
@@ -61,6 +62,7 @@ export default function RootLayout({
             <UserProvider>
               <Header />
               <LandingModalWrapper />
+              <StakeReturnNotification />
               {children}
             </UserProvider>
           </PrivyProvider>

@@ -172,8 +172,23 @@ export function UnlockFaucetModal({
       // Show Blockscout transaction link
       const { getTransactionUrl } = await import('@/lib/blockscout');
       const explorerUrl = getTransactionUrl(receipt.hash);
-      alert(`✅ Faucet Unlocked with ETH!\n\n💰 Cost: ${ethAmount} ETH (live Pyth price)\n💎 You can now claim 100 BUG tokens daily!\n\n🔗 Opening explorer in new tab...`);
-      window.open(explorerUrl, '_blank', 'noopener,noreferrer');
+      
+      // Copy explorer URL to clipboard
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(explorerUrl);
+      }
+      
+      const shouldOpenExplorer = confirm(
+        `✅ Faucet Unlocked with ETH!\n\n` +
+        `💰 Cost: ${ethAmount} ETH (live Pyth price)\n` +
+        `💎 You can now claim 100 BUG tokens daily!\n\n` +
+        `🔗 Transaction link copied to clipboard!\n\n` +
+        `Click OK to open Blockscout Explorer`
+      );
+      
+      if (shouldOpenExplorer) {
+        window.open(explorerUrl, '_blank', 'noopener,noreferrer');
+      }
       
       // Record unlock in database for mobile compatibility
       try {
@@ -314,8 +329,23 @@ export function UnlockFaucetModal({
       // Show Blockscout transaction link
       const { getTransactionUrl } = await import('@/lib/blockscout');
       const explorerUrl = getTransactionUrl(receipt.hash);
-      alert(`✅ Faucet Unlocked with PYUSD!\n\n💰 Cost: $1 PYUSD\n💎 You can now claim 100 BUG tokens daily!\n\n🔗 Opening explorer in new tab...`);
-      window.open(explorerUrl, '_blank', 'noopener,noreferrer');
+      
+      // Copy explorer URL to clipboard
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(explorerUrl);
+      }
+      
+      const shouldOpenExplorer = confirm(
+        `✅ Faucet Unlocked with PYUSD!\n\n` +
+        `💰 Cost: $1 PYUSD\n` +
+        `💎 You can now claim 100 BUG tokens daily!\n\n` +
+        `🔗 Transaction link copied to clipboard!\n\n` +
+        `Click OK to open Blockscout Explorer`
+      );
+      
+      if (shouldOpenExplorer) {
+        window.open(explorerUrl, '_blank', 'noopener,noreferrer');
+      }
       
       // Record unlock in database for mobile compatibility
       try {

@@ -212,13 +212,7 @@ export function FaucetButton() {
       // Show Blockscout transaction link
       const { getTransactionUrl } = await import('@/lib/blockscout');
       const explorerUrl = getTransactionUrl(receipt.hash);
-      setMessage("🎉 Successfully claimed 100 BUG tokens!");
-      
-      // Show alert with explorer link
-      setTimeout(() => {
-        alert(`🎉 Claimed 100 BUG Tokens!\n\n💎 Check your wallet balance\n⏰ Next claim: 24 hours\n\n🔗 Opening explorer in new tab...`);
-        window.open(explorerUrl, '_blank', 'noopener,noreferrer');
-      }, 500);
+      setMessage(`🎉 Successfully claimed 100 BUG tokens! [View on Explorer](${explorerUrl})`);
       
       setError("");
       

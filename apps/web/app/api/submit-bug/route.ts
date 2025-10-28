@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PinataSDK } from "pinata";
 import { submitBugToVoting, BugRarity } from "@/lib/contracts";
+import { withStrictRateLimit } from "@/lib/api-middleware";
 
 /**
  * POST /api/submit-bug
@@ -19,6 +20,12 @@ import { submitBugToVoting, BugRarity } from "@/lib/contracts";
  * - userAddress: string (discoverer wallet address)
  */
 export async function POST(request: NextRequest) {
+  // Apply strict rate limiting (this is an expensive operation)
+  const rateLimitResult = await withStrictRateLimit(request);
+  if (!rateLimitResult.success) {
+    return rateLimitResult.response;
+  }
+
   try {
     // Parse multipart form data
     const formData = await request.formData();

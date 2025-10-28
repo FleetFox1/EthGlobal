@@ -1,10 +1,12 @@
 /**
- * RPC Provider with automatic fallback and rate limiting
+ * RPC Provider with automatic fallback, rate limiting, and circuit breaker
  * Falls back to public Sepolia RPC if Alchemy is rate limited
  * Implements client-side rate limiter to prevent RPC spam
+ * Uses circuit breaker to prevent cascading failures
  */
 
 import { ethers } from "ethers";
+import { alchemyCircuitBreaker } from "./circuit-breaker";
 
 // Primary provider (Alchemy)
 const ALCHEMY_RPC = process.env.NEXT_PUBLIC_RPC_URL || "https://eth-sepolia.g.alchemy.com/v2/zhDx7ikWXX8vnhobQBhMb";
@@ -68,7 +70,7 @@ function isRateLimited(): boolean {
 }
 
 /**
- * Get a provider with automatic fallback
+ * Get a provider with automatic fallback and circuit breaker
  * Tries Alchemy first, then falls back to public RPCs
  */
 export async function getRobustProvider(): Promise<ethers.JsonRpcProvider> {
@@ -77,14 +79,21 @@ export async function getRobustProvider(): Promise<ethers.JsonRpcProvider> {
     throw new Error("Rate limit exceeded. Please wait before making more requests.");
   }
   
-  // Try Alchemy first
-  try {
-    const provider = new ethers.JsonRpcProvider(ALCHEMY_RPC);
-    await provider.getBlockNumber(); // Test if it works
-    console.log("✅ Using Alchemy RPC");
-    return provider;
-  } catch (error) {
-    console.warn("⚠️ Alchemy RPC failed, trying fallbacks...");
+  // Try Alchemy first with circuit breaker protection
+  if (alchemyCircuitBreaker.isAvailable()) {
+    try {
+      const provider = await alchemyCircuitBreaker.execute(async () => {
+        const p = new ethers.JsonRpcProvider(ALCHEMY_RPC);
+        await p.getBlockNumber(); // Test if it works
+        return p;
+      });
+      console.log("✅ Using Alchemy RPC");
+      return provider;
+    } catch (error) {
+      console.warn("⚠️ Alchemy RPC failed (circuit breaker may be open), trying fallbacks...");
+    }
+  } else {
+    console.warn("⚠️ Alchemy circuit breaker is OPEN, using fallbacks...");
   }
 
   // Try fallbacks

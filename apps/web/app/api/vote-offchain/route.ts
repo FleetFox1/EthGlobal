@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/db/client";
+import { withRateLimit } from "@/lib/api-middleware";
 
 /**
  * POST /api/vote-offchain
@@ -12,6 +13,12 @@ import { sql } from "@/lib/db/client";
  * - voteFor: boolean - true = approve, false = reject
  */
 export async function POST(request: NextRequest) {
+  // Apply rate limiting
+  const rateLimitResult = await withRateLimit(request);
+  if (!rateLimitResult.success) {
+    return rateLimitResult.response;
+  }
+
   try {
     const body = await request.json();
     const { uploadId, voterAddress, voteFor } = body;

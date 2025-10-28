@@ -1,7 +1,14 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
+import { withRateLimit } from '@/lib/api-middleware';
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
+  // Apply rate limiting
+  const rateLimitResult = await withRateLimit(request);
+  if (!rateLimitResult.success) {
+    return rateLimitResult.response;
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const walletAddress = searchParams.get('wallet');

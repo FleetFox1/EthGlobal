@@ -38,6 +38,10 @@ export default function AdminPage() {
   const [showMinterModal, setShowMinterModal] = useState(false);
   const [showSubmissionsModal, setShowSubmissionsModal] = useState(false);
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
+  
+  // Health monitoring state
+  const [healthStatus, setHealthStatus] = useState<any>(null);
+  const [loadingHealth, setLoadingHealth] = useState(false);
 
   useEffect(() => {
     async function loadStats() {
@@ -102,6 +106,33 @@ export default function AdminPage() {
     }
 
     loadStats();
+  }, [isAdmin]);
+
+  // Load health status
+  useEffect(() => {
+    async function loadHealth() {
+      if (!isAdmin) return;
+
+      try {
+        setLoadingHealth(true);
+        const healthRes = await fetch('/api/admin/health');
+        const healthData = await healthRes.json();
+        
+        if (healthData.success) {
+          setHealthStatus(healthData.data);
+        }
+      } catch (error) {
+        console.error("Error loading health status:", error);
+      } finally {
+        setLoadingHealth(false);
+      }
+    }
+
+    loadHealth();
+    
+    // Refresh health status every 30 seconds
+    const interval = setInterval(loadHealth, 30000);
+    return () => clearInterval(interval);
   }, [isAdmin]);
 
   if (loading) {
@@ -448,6 +479,125 @@ export default function AdminPage() {
             </Card>
           </>
         )}
+
+        {/* System Health Monitoring */}
+        <Card className="p-6 mb-8">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <TrendingUp className="h-5 w-5" />
+            System Health
+          </h2>
+          
+          {loadingHealth ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          ) : healthStatus ? (
+            <div className="space-y-4">
+              {/* Overall Status */}
+              <div className="flex items-center gap-3 p-4 rounded-lg bg-muted">
+                <div className={`w-3 h-3 rounded-full ${
+                  healthStatus.status === 'healthy' ? 'bg-green-500' : 
+                  healthStatus.status === 'recovering' ? 'bg-yellow-500' : 
+                  'bg-red-500'
+                } animate-pulse`} />
+                <div>
+                  <p className="font-semibold">
+                    Status: {healthStatus.status === 'healthy' ? 'All Systems Operational' : 
+                            healthStatus.status === 'recovering' ? 'Recovering' : 
+                            'Degraded'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Last updated: {new Date(healthStatus.timestamp).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+
+              {/* Circuit Breakers */}
+              <div>
+                <h3 className="font-semibold mb-2">Circuit Breakers</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {Object.entries(healthStatus.circuitBreakers || {}).map(([name, stats]: [string, any]) => (
+                    <div key={name} className="p-3 border rounded-lg">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-medium capitalize">{name}</span>
+                        <span className={`text-xs px-2 py-1 rounded ${
+                          stats.state === 'CLOSED' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' :
+                          stats.state === 'HALF_OPEN' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200' :
+                          'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
+                        }`}>
+                          {stats.state}
+                        </span>
+                      </div>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <div className="flex justify-between">
+                          <span>Failures:</span>
+                          <span>{stats.failures}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Rejections:</span>
+                          <span>{stats.rejections}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Rate Limiters */}
+              <div>
+                <h3 className="font-semibold mb-2">Rate Limiters</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="p-3 border rounded-lg">
+                    <p className="font-medium mb-1">IP-based</p>
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <div className="flex justify-between">
+                        <span>Active keys:</span>
+                        <span>{healthStatus.rateLimiter?.ip?.activeKeys || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Total keys:</span>
+                        <span>{healthStatus.rateLimiter?.ip?.totalKeys || 0}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-3 border rounded-lg">
+                    <p className="font-medium mb-1">RPC-strict</p>
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <div className="flex justify-between">
+                        <span>Active keys:</span>
+                        <span>{healthStatus.rateLimiter?.rpc?.activeKeys || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Total keys:</span>
+                        <span>{healthStatus.rateLimiter?.rpc?.totalKeys || 0}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Test Alert Button */}
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={async () => {
+                  try {
+                    await fetch('/api/admin/alerts/test');
+                    alert('Test alert sent! Check console and configured alert channels.');
+                  } catch (error) {
+                    alert('Failed to send test alert');
+                  }
+                }}
+              >
+                Send Test Alert
+              </Button>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Unable to load health status
+            </p>
+          )}
+        </Card>
 
         {/* Admin Actions */}
         <Card className="p-6 mb-8">
